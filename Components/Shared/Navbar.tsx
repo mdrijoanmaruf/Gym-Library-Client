@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import { FiArrowRight, FiX, FiChevronRight } from "react-icons/fi";
 
 const NAV_LINKS = [
@@ -17,6 +18,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const { data: session } = useSession();
   const drawerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -174,31 +176,52 @@ export default function Navbar() {
 
           {/* ── DESKTOP ACTIONS ── */}
           <div className="hidden lg:flex items-center gap-3">
-            {/* Ghost Log In */}
-            <Link
-              href="/login"
-              className="
-                px-6 py-2.5 rounded-xl text-[14.5px] font-semibold tracking-wide
-                text-zinc-300 hover:text-white
-                border border-white/[0.09] hover:border-white/[0.18]
-                transition-all duration-200 hover:bg-white/[0.04]
-              "
-              style={{ backdropFilter: "blur(8px)" }}
-            >
-              Log In
-            </Link>
+            {session ? (
+              <div className="flex items-center gap-4">
+                <Link href="/gym" className="flex items-center gap-2 group hover:opacity-80 transition-opacity">
+                  <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 font-bold border border-orange-500/30">
+                    {session.user?.name?.[0]?.toUpperCase() || "U"}
+                  </div>
+                  <span className="text-[14.5px] font-medium text-white group-hover:text-orange-400 transition-colors">
+                    {session.user?.name}
+                  </span>
+                </Link>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="px-4 py-2 rounded-xl text-[13px] font-semibold text-zinc-400 hover:text-white border border-white/[0.09] hover:border-white/[0.18] transition-all hover:bg-white/[0.04]"
+                >
+                  Log Out
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Ghost Log In */}
+                <Link
+                  href="/login"
+                  className="
+                    px-6 py-2.5 rounded-xl text-[14.5px] font-semibold tracking-wide
+                    text-zinc-300 hover:text-white
+                    border border-white/[0.09] hover:border-white/[0.18]
+                    transition-all duration-200 hover:bg-white/[0.04]
+                  "
+                  style={{ backdropFilter: "blur(8px)" }}
+                >
+                  Log In
+                </Link>
 
-            {/* Orange CTA */}
-            <Link
-              href="/register"
-              className="cta-btn relative px-6 py-2.5 rounded-xl text-[14.5px] font-bold tracking-wide text-[#1c0a00] overflow-hidden orange-btn"
-            >
-              <span className="shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[120%]" />
-              <span className="relative z-10 flex items-center gap-2">
-                Get Started
-                <FiArrowRight className="w-4 h-4" />
-              </span>
-            </Link>
+                {/* Orange CTA */}
+                <Link
+                  href="/register"
+                  className="cta-btn relative px-6 py-2.5 rounded-xl text-[14.5px] font-bold tracking-wide text-[#1c0a00] overflow-hidden orange-btn"
+                >
+                  <span className="shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[120%]" />
+                  <span className="relative z-10 flex items-center gap-2">
+                    Get Started
+                    <FiArrowRight className="w-4 h-4" />
+                  </span>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* ── HAMBURGER ── */}
@@ -290,21 +313,44 @@ export default function Navbar() {
 
           {/* CTAs */}
           <div className="px-5 py-6 space-y-3 shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-            <Link
-              href="/login"
-              onClick={() => setMobileOpen(false)}
-              className="block w-full text-center py-3 rounded-xl text-[15px] font-semibold text-zinc-300 border border-white/[0.1] hover:border-white/20 hover:text-white hover:bg-white/[0.05] transition-all duration-200"
-            >
-              Log In
-            </Link>
-            <Link
-              href="/register"
-              onClick={() => setMobileOpen(false)}
-              className="cta-btn relative block w-full text-center py-3 rounded-xl text-[15px] font-bold text-[#1c0a00] overflow-hidden orange-btn"
-            >
-              <span className="shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[120%]" />
-              <span className="relative z-10 flex items-center justify-center gap-2">Get Started <FiArrowRight className="w-4 h-4" /></span>
-            </Link>
+            {session ? (
+              <>
+                <Link
+                  href="/gym"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 py-3 px-4 rounded-xl border border-white/[0.1] bg-white/[0.02]"
+                >
+                  <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 font-bold border border-orange-500/30">
+                    {session.user?.name?.[0]?.toUpperCase() || "U"}
+                  </div>
+                  <span className="text-[15px] font-medium text-white">{session.user?.name}</span>
+                </Link>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="block w-full text-center py-3 rounded-xl text-[15px] font-semibold text-zinc-400 border border-white/[0.1] hover:border-white/20 hover:text-white hover:bg-white/[0.05] transition-all duration-200"
+                >
+                  Log Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="block w-full text-center py-3 rounded-xl text-[15px] font-semibold text-zinc-300 border border-white/[0.1] hover:border-white/20 hover:text-white hover:bg-white/[0.05] transition-all duration-200"
+                >
+                  Log In
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setMobileOpen(false)}
+                  className="cta-btn relative block w-full text-center py-3 rounded-xl text-[15px] font-bold text-[#1c0a00] overflow-hidden orange-btn"
+                >
+                  <span className="shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[120%]" />
+                  <span className="relative z-10 flex items-center justify-center gap-2">Get Started <FiArrowRight className="w-4 h-4" /></span>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* ambient glows */}

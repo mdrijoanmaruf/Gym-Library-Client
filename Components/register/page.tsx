@@ -44,7 +44,7 @@ export default function Register() {
       if (signInRes?.error) {
         setError("Account created but failed to log in automatically.");
       } else {
-        router.push("/");
+        router.push("/gym");
       }
     } catch (err: any) {
       setError(err.message);
@@ -187,7 +187,7 @@ export default function Register() {
         {/* Google Button */}
         <button 
           type="button" 
-          onClick={() => signIn("google")}
+          onClick={() => signIn("google", { callbackUrl: "/gym" })}
           className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl font-semibold text-[14px] text-zinc-200 transition-all duration-200 hover:-translate-y-[1px]"
           style={{
             background: "rgba(255,255,255,0.04)",
