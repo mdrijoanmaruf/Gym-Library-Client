@@ -1,10 +1,57 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { FiMail, FiLock, FiUser, FiArrowRight } from "react-icons/fi";
 import { FaGoogle } from "react-icons/fa";
 
 export default function Register() {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      // 1. Hit our backend register endpoint
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Registration failed");
+      }
+
+      // 2. Automatically sign them in
+      const signInRes = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      });
+
+      if (signInRes?.error) {
+        setError("Account created but failed to log in automatically.");
+      } else {
+        router.push("/");
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="min-h-screen flex items-center justify-center pt-20 px-6 relative overflow-hidden">
       
@@ -32,8 +79,14 @@ export default function Register() {
           </p>
         </div>
 
-        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+        <form className="space-y-4" onSubmit={handleSubmit}>
           
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-xl mb-4">
+              {error}
+            </div>
+          )}
+
           {/* Name Input */}
           <div className="space-y-1.5">
             <label className="text-[13px] font-semibold text-zinc-300 ml-1">Full Name</label>
@@ -44,6 +97,8 @@ export default function Register() {
               <input 
                 type="text" 
                 placeholder="Enter your name" 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 required
                 className="w-full pl-11 pr-4 py-3.5 rounded-xl text-[14px] text-white placeholder-zinc-500 outline-none transition-all duration-200"
                 style={{
@@ -67,6 +122,8 @@ export default function Register() {
               <input 
                 type="email" 
                 placeholder="Enter your email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full pl-11 pr-4 py-3.5 rounded-xl text-[14px] text-white placeholder-zinc-500 outline-none transition-all duration-200"
                 style={{
@@ -90,6 +147,8 @@ export default function Register() {
               <input 
                 type="password" 
                 placeholder="Enter your password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 className="w-full pl-11 pr-4 py-3.5 rounded-xl text-[14px] text-white placeholder-zinc-500 outline-none transition-all duration-200"
                 style={{
@@ -106,14 +165,15 @@ export default function Register() {
           {/* Submit Button */}
           <button 
             type="submit" 
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-[14px] text-[#1c0a00] tracking-wide transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-[14px] text-[#1c0a00] tracking-wide transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100"
             style={{
               background: "linear-gradient(135deg, #ffb347 0%, #ff8c00 50%, #e55a00 100%)",
               boxShadow: "0 0 0 1px rgba(255,140,0,0.3), 0 4px 20px rgba(255,140,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2)"
             }}
           >
-            Create Account
-            <FiArrowRight className="w-4 h-4" />
+            {loading ? "Creating Account..." : "Create Account"}
+            {!loading && <FiArrowRight className="w-4 h-4" />}
           </button>
         </form>
 
@@ -127,6 +187,7 @@ export default function Register() {
         {/* Google Button */}
         <button 
           type="button" 
+          onClick={() => signIn("google")}
           className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl font-semibold text-[14px] text-zinc-200 transition-all duration-200 hover:-translate-y-[1px]"
           style={{
             background: "rgba(255,255,255,0.04)",

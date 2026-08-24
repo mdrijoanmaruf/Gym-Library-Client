@@ -1,10 +1,38 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { FiMail, FiLock, FiArrowRight } from "react-icons/fi";
 import { FaGoogle } from "react-icons/fa";
 
 export default function Login() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const res = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
+    });
+
+    if (res?.error) {
+      setError("Invalid email or password");
+      setLoading(false);
+    } else {
+      router.push(searchParams?.get("callbackUrl") || "/");
+    }
+  };
   return (
     <div className="min-h-screen flex items-center justify-center pt-20 px-6 relative overflow-hidden">
       
@@ -32,8 +60,14 @@ export default function Login() {
           </p>
         </div>
 
-        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+        <form className="space-y-4" onSubmit={handleSubmit}>
           
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-xl mb-4">
+              {error}
+            </div>
+          )}
+
           {/* Email Input */}
           <div className="space-y-1.5">
             <label className="text-[13px] font-semibold text-zinc-300 ml-1">Email Address</label>
@@ -44,6 +78,8 @@ export default function Login() {
               <input 
                 type="email" 
                 placeholder="Enter your email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full pl-11 pr-4 py-3.5 rounded-xl text-[14px] text-white placeholder-zinc-500 outline-none transition-all duration-200"
                 style={{
@@ -70,6 +106,8 @@ export default function Login() {
               <input 
                 type="password" 
                 placeholder="Enter your password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 className="w-full pl-11 pr-4 py-3.5 rounded-xl text-[14px] text-white placeholder-zinc-500 outline-none transition-all duration-200"
                 style={{
@@ -86,14 +124,15 @@ export default function Login() {
           {/* Submit Button */}
           <button 
             type="submit" 
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-[14px] text-[#1c0a00] tracking-wide transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-[14px] text-[#1c0a00] tracking-wide transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100"
             style={{
               background: "linear-gradient(135deg, #ffb347 0%, #ff8c00 50%, #e55a00 100%)",
               boxShadow: "0 0 0 1px rgba(255,140,0,0.3), 0 4px 20px rgba(255,140,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2)"
             }}
           >
-            Log In
-            <FiArrowRight className="w-4 h-4" />
+            {loading ? "Logging In..." : "Log In"}
+            {!loading && <FiArrowRight className="w-4 h-4" />}
           </button>
         </form>
 
@@ -107,6 +146,7 @@ export default function Login() {
         {/* Google Button */}
         <button 
           type="button" 
+          onClick={() => signIn("google")}
           className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl font-semibold text-[14px] text-zinc-200 transition-all duration-200 hover:-translate-y-[1px]"
           style={{
             background: "rgba(255,255,255,0.04)",
