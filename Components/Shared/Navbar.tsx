@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { FiArrowRight, FiX, FiChevronRight } from "react-icons/fi";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
@@ -195,9 +196,7 @@ export default function Navbar() {
               <span className="shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[120%]" />
               <span className="relative z-10 flex items-center gap-2">
                 Get Started
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 16 16">
-                  <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <FiArrowRight className="w-4 h-4" />
               </span>
             </Link>
           </div>
@@ -258,9 +257,7 @@ export default function Navbar() {
               aria-label="Close menu"
               className="w-9 h-9 flex items-center justify-center rounded-lg border border-white/[0.08] text-zinc-500 hover:text-white hover:border-white/20 transition-all duration-200"
             >
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                <path d="M1 1L10 10M10 1L1 10" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
-              </svg>
+              <FiX className="w-5 h-5" />
             </button>
           </div>
 
@@ -285,9 +282,7 @@ export default function Navbar() {
                   `}
                 >
                   {link.label}
-                  <svg className={`w-4 h-4 ${active ? "text-orange-400" : "text-zinc-600"}`} fill="none" viewBox="0 0 16 16">
-                    <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                  <FiChevronRight className={`w-4 h-4 ${active ? "text-orange-400" : "text-zinc-600"}`} />
                 </Link>
               );
             })}
@@ -308,7 +303,7 @@ export default function Navbar() {
               className="cta-btn relative block w-full text-center py-3 rounded-xl text-[15px] font-bold text-[#1c0a00] overflow-hidden orange-btn"
             >
               <span className="shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[120%]" />
-              <span className="relative z-10">Get Started →</span>
+              <span className="relative z-10 flex items-center justify-center gap-2">Get Started <FiArrowRight className="w-4 h-4" /></span>
             </Link>
           </div>
 
