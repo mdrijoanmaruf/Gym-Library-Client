@@ -1,12 +1,20 @@
 "use client";
 
+import Image from "next/image";
+import HeartButton from "./HeartButton";
+import { DayOfWeek } from "./SaveExerciseModal";
+
 interface GifCardProps {
   id: string;
   title: string;
   category: string;
+  savedDays?: DayOfWeek[];
+  onHeartClick?: () => void;
 }
 
-export default function GifCard({ id, title, category }: GifCardProps) {
+export default function GifCard({ id, title, category, savedDays = [], onHeartClick }: GifCardProps) {
+  const isSaved = savedDays.length > 0;
+
   return (
     <div
       className="group relative rounded-2xl overflow-hidden"
@@ -35,11 +43,18 @@ export default function GifCard({ id, title, category }: GifCardProps) {
           className="w-full h-full object-cover"
         />
         {/* Category badge */}
-        <div className="absolute top-2 right-2 px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider text-orange-400"
+        <div className="absolute top-2 left-2 px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider text-orange-400"
           style={{ background: "rgba(255,140,0,0.15)", border: "1px solid rgba(255,140,0,0.25)" }}
         >
           {category}
         </div>
+        
+        {/* Heart */}
+        <HeartButton 
+          isSaved={isSaved} 
+          onClick={(e) => { e.stopPropagation(); onHeartClick?.(); }} 
+          className="top-2 right-2"
+        />
       </div>
 
       {/* Title */}

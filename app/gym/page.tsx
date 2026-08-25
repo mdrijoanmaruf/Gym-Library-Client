@@ -45,58 +45,61 @@ export default function GymPage() {
         </p>
       </div>
 
-      {/* ── Category Tabs ── */}
-      <div className="flex items-center gap-2 flex-wrap mb-6">
-        {STATIC_CATEGORIES.map((cat) => {
-          const active = activeCategory === cat;
-          return (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className="px-5 py-2 rounded-xl text-[14px] font-semibold transition-all duration-200 border"
-              style={active ? {
-                background: "rgba(255,140,0,0.15)",
-                borderColor: "rgba(255,140,0,0.35)",
-                color: "#ffb347",
-              } : {
-                background: "rgba(255,255,255,0.03)",
-                borderColor: "rgba(255,255,255,0.08)",
-                color: "#71717a",
-              }}
-            >
-              {cat}
-            </button>
-          );
-        })}
-      </div>
+      {/* ── Filters Row ── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        {/* Category Tabs */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {STATIC_CATEGORIES.map((cat) => {
+            const active = activeCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className="px-5 py-2 rounded-xl text-[14px] font-semibold transition-all duration-200 border"
+                style={active ? {
+                  background: "rgba(255,140,0,0.15)",
+                  borderColor: "rgba(255,140,0,0.35)",
+                  color: "#ffb347",
+                } : {
+                  background: "rgba(255,255,255,0.03)",
+                  borderColor: "rgba(255,255,255,0.08)",
+                  color: "#71717a",
+                }}
+              >
+                {cat}
+              </button>
+            );
+          })}
+        </div>
 
-      {/* ── GIF / Video Toggle ── */}
-      <div className="flex items-center gap-1 p-1 rounded-xl mb-8 w-fit"
-        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
-      >
-        {([
-          { value: "gif", label: "GIFs", icon: FiImage },
-          { value: "video", label: "Videos", icon: FiVideo },
-        ] as const).map(({ value, label, icon: Icon }) => {
-          const active = mediaType === value;
-          return (
-            <button
-              key={value}
-              onClick={() => setMediaType(value)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[14px] font-semibold transition-all duration-200"
-              style={active ? {
-                background: "linear-gradient(135deg, rgba(255,180,71,0.9), rgba(255,140,0,0.9))",
-                color: "#1c0a00",
-                boxShadow: "0 4px 12px rgba(255,140,0,0.3)",
-              } : {
-                color: "#71717a",
-              }}
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-            </button>
-          );
-        })}
+        {/* GIF / Video Toggle */}
+        <div className="flex items-center gap-1 p-1 rounded-xl shrink-0 w-fit"
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
+        >
+          {([
+            { value: "gif", label: "GIFs", icon: FiImage },
+            { value: "video", label: "Videos", icon: FiVideo },
+          ] as const).map(({ value, label, icon: Icon }) => {
+            const active = mediaType === value;
+            return (
+              <button
+                key={value}
+                onClick={() => setMediaType(value)}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[14px] font-semibold transition-all duration-200"
+                style={active ? {
+                  background: "linear-gradient(135deg, rgba(255,180,71,0.9), rgba(255,140,0,0.9))",
+                  color: "#1c0a00",
+                  boxShadow: "0 4px 12px rgba(255,140,0,0.3)",
+                } : {
+                  color: "#71717a",
+                }}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Media Grid ── */}

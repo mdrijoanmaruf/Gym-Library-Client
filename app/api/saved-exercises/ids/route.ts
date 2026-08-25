@@ -1,0 +1,19 @@
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { NextRequest, NextResponse } from "next/server";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+
+export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  const token = (session as any)?.accessToken;
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const res = await fetch(`${API_BASE}/saved-exercises/ids`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+
+  const data = await res.json();
+  return NextResponse.json(data, { status: res.status });
+}

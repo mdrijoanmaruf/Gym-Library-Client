@@ -1,15 +1,20 @@
 "use client";
 
 import { FiPlay } from "react-icons/fi";
+import HeartButton from "./HeartButton";
+import { DayOfWeek } from "./SaveExerciseModal";
 
 interface VideoCardProps {
   id: string;
   title: string;
   category: string;
+  savedDays?: DayOfWeek[];
   onPlay: (id: string, title: string) => void;
+  onHeartClick?: () => void;
 }
 
-export default function VideoCard({ id, title, category, onPlay }: VideoCardProps) {
+export default function VideoCard({ id, title, category, savedDays = [], onPlay, onHeartClick }: VideoCardProps) {
+  const isSaved = savedDays.length > 0;
   return (
     <div
       className="group relative rounded-2xl overflow-hidden cursor-pointer"
@@ -44,11 +49,18 @@ export default function VideoCard({ id, title, category, onPlay }: VideoCardProp
         </div>
 
         {/* Category badge */}
-        <div className="absolute top-2 right-2 px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider text-orange-400"
+        <div className="absolute top-2 left-2 px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider text-orange-400"
           style={{ background: "rgba(255,140,0,0.15)", border: "1px solid rgba(255,140,0,0.25)" }}
         >
           {category}
         </div>
+
+        {/* Heart */}
+        <HeartButton 
+          isSaved={isSaved} 
+          onClick={(e) => { e.stopPropagation(); onHeartClick?.(); }} 
+          className="top-2 right-2"
+        />
       </div>
 
       {/* Title */}

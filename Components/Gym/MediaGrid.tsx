@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import GifCard from "./GifCard";
 import VideoCard from "./VideoCard";
 import VideoPlayerModal from "./VideoPlayerModal";
+import SaveExerciseModal, { DayOfWeek } from "./SaveExerciseModal";
 import { FiLoader } from "react-icons/fi";
 import { signOut } from "next-auth/react";
 
@@ -23,9 +24,23 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [activeVideo, setActiveVideo] = useState<{ id: string; title: string } | null>(null);
+  const [playingVideo, setPlayingVideo] = useState<{ id: string; title: string } | null>(null);
+
+  // Saved exercises state
+  const [savedMap, setSavedMap] = useState<Record<string, DayOfWeek[]>>({});
+  const [savingMedia, setSavingMedia] = useState<{ id: string; title: string } | null>(null);
+
+  // Fetch saved IDs on mount
+  useEffect(() => {
+    fetch("/api/saved-exercises/ids")
+      .then(res => res.json())
+      .then(json => {
+        if (json.data) setSavedMap(json.data);
+      })
+      .catch(err => console.error("Failed to fetch saved ids", err));
+  }, []);
 
   const fetchMedia = useCallback(async (pageNum: number, reset: boolean) => {
     if (reset) setLoading(true);
@@ -104,19 +119,33 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
           ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
           : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
       }`}>
-        {items.map((item) =>
-          item.type === "gif" ? (
-            <GifCard key={item._id} id={item._id} title={item.title} category={item.category} />
-          ) : (
+        {items.map((item) => {
+          const savedDays = savedMap[item._id] || [];
+            
+          if (item.type === "gif") {
+            return (
+              <GifCard 
+                key={item._id} 
+                id={item._id}
+                title={item.title}
+                category={item.category}
+                savedDays={savedDays}
+                onHeartClick={() => setSavingMedia({ id: item._id, title: item.title })}
+              />
+            );
+          }
+          return (
             <VideoCard
               key={item._id}
               id={item._id}
               title={item.title}
               category={item.category}
-              onPlay={(id, title) => setActiveVideo({ id, title })}
+              onPlay={() => setPlayingVideo({ id: item._id, title: item.title })}
+              savedDays={savedDays}
+              onHeartClick={() => setSavingMedia({ id: item._id, title: item.title })}
             />
-          )
-        )}
+          );
+        })}
       </div>
 
       {/* Load More */}
@@ -141,11 +170,29 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
       )}
 
       {/* Video Player Modal */}
-      {activeVideo && (
+      {playingVideo && (
         <VideoPlayerModal
-          id={activeVideo.id}
-          title={activeVideo.title}
-          onClose={() => setActiveVideo(null)}
+          id={playingVideo.id}
+          title={playingVideo.title}
+          onClose={() => setPlayingVideo(null)}
+        />
+      )}
+
+      {/* Save Exercise Modal */}
+      {savingMedia && (
+        <SaveExerciseModal
+          mediaId={savingMedia.id}
+          title={savingMedia.title}
+          initialDays={savedMap[savingMedia.id] || []}
+          onClose={() => setSavingMedia(null)}
+          onSave={(mediaId, days) => {
+            setSavedMap(prev => {
+              const newMap = { ...prev };
+              if (days.length === 0) delete newMap[mediaId];
+              else newMap[mediaId] = days;
+              return newMap;
+            });
+          }}
         />
       )}
     </>
