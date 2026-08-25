@@ -9,8 +9,8 @@ import { FiArrowRight, FiX, FiChevronRight } from "react-icons/fi";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
-  { label: "Services", href: "/services" },
-  { label: "Pricing", href: "/pricing" },
+  { label: "Gym", href: "/gym" },
+  { label: "My Workout", href: "/my-workout" },
   { label: "Contact", href: "/contact" },
 ];
 

@@ -5,6 +5,7 @@ import GifCard from "./GifCard";
 import VideoCard from "./VideoCard";
 import VideoPlayerModal from "./VideoPlayerModal";
 import { FiLoader } from "react-icons/fi";
+import { signOut } from "next-auth/react";
 
 interface MediaItem {
   _id: string;
@@ -17,8 +18,6 @@ interface MediaGridProps {
   category: string;
   mediaType: "gif" | "video";
 }
-
-const LIMIT = 10;
 
 export default function MediaGrid({ category, mediaType }: MediaGridProps) {
   const [items, setItems] = useState<MediaItem[]>([]);
@@ -33,14 +32,19 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
     else setLoadingMore(true);
 
     try {
+      const limit = mediaType === "gif" ? 15 : 12;
       const params = new URLSearchParams({
         type: mediaType,
-        limit: String(LIMIT),
+        limit: String(limit),
         page: String(pageNum),
       });
       if (category !== "All") params.set("category", category);
 
       const res = await fetch(`/api/media?${params.toString()}`);
+      if (res.status === 401) {
+        signOut({ callbackUrl: "/login" });
+        return;
+      }
       if (!res.ok) throw new Error("Failed to fetch media");
       const json = await res.json();
 
@@ -130,7 +134,7 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
             {loadingMore ? (
               <><FiLoader className="w-4 h-4 animate-spin" /> Loading...</>
             ) : (
-              `Load More (${Math.min(LIMIT, total - items.length)} more)`
+              `Load More (${Math.min(mediaType === "gif" ? 15 : 12, total - items.length)} more)`
             )}
           </button>
         </div>
