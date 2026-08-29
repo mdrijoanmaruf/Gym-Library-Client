@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import GifCard from "./GifCard";
 import VideoCard from "./VideoCard";
 import VideoPlayerModal from "./VideoPlayerModal";
@@ -80,13 +80,28 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
     fetchMedia(1, true);
   }, [category, mediaType, fetchMedia]);
 
-  const handleLoadMore = () => {
+  const handleLoadMore = useCallback(() => {
     const nextPage = page + 1;
     setPage(nextPage);
     fetchMedia(nextPage, false);
-  };
+  }, [page, fetchMedia]);
 
   const hasMore = items.length < total;
+
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useCallback((node: HTMLButtonElement | null) => {
+    if (loadingMore) return;
+    if (observerRef.current) observerRef.current.disconnect();
+
+    if (node) {
+      observerRef.current = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && hasMore) {
+          handleLoadMore();
+        }
+      });
+      observerRef.current.observe(node);
+    }
+  }, [loadingMore, hasMore, handleLoadMore]);
 
   if (loading) {
     return (
@@ -182,6 +197,7 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
       {hasMore && (
         <div className="flex justify-center mt-10">
           <button
+            ref={loadMoreRef}
             onClick={handleLoadMore}
             disabled={loadingMore}
             className="flex items-center gap-3 px-8 py-3.5 rounded-xl font-bold text-[14px] text-[#1c0a00] disabled:opacity-60 transition-all hover:scale-[1.02] active:scale-[0.98]"

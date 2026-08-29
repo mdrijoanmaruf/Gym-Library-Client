@@ -37,7 +37,7 @@ export default function MyWorkoutPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (activeCategory !== "All") params.set("category", activeCategory);
+      // We no longer send 'category' to the backend so we can get all items for the day and calculate counts locally
       if (activeDay !== "All") params.set("day", activeDay);
 
       const res = await fetch(`/api/saved-exercises?${params.toString()}`);
@@ -55,7 +55,7 @@ export default function MyWorkoutPage() {
     if (status === "authenticated") {
       fetchSavedExercises();
     }
-  }, [activeCategory, activeDay, status]);
+  }, [activeDay, status]); // Only refetch when day changes or auth status changes, not category
 
   const handleSaveUpdate = (mediaId: string, newDays: DayOfWeek[]) => {
     if (newDays.length === 0) {
@@ -86,7 +86,19 @@ export default function MyWorkoutPage() {
 
   if (!session) return null;
 
-  const filteredExercises = exercises.filter((e) => e.mediaId?.type === mediaType);
+  const filteredByType = exercises.filter((e) => e.mediaId?.type === mediaType);
+  const filteredExercises = filteredByType.filter((e) => activeCategory === "All" || e.mediaId?.category === activeCategory);
+
+  const categoryCounts = filteredByType.reduce((acc, curr) => {
+    const cat = curr.mediaId?.category;
+    if (cat) acc[cat] = (acc[cat] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const dynamicCategories = STATIC_CATEGORIES.map(cat => ({
+    name: cat,
+    count: cat === "All" ? filteredByType.length : (categoryCounts[cat] || 0)
+  }));
 
   return (
     <div className="min-h-screen pt-28 pb-20 px-6 lg:px-12 max-w-[1600px] mx-auto">
@@ -133,19 +145,19 @@ export default function MyWorkoutPage() {
         <div className="space-y-3 flex-1 xl:max-w-xl border-t xl:border-t-0 xl:border-l border-white/10 pt-5 xl:pt-0 xl:pl-6">
           <h3 className="text-sm font-semibold text-zinc-400 flex items-center gap-2 uppercase tracking-wide"><FiFilter /> Muscle Group</h3>
           <div className="flex flex-wrap gap-2">
-            {STATIC_CATEGORIES.map(cat => {
-              const active = activeCategory === cat;
+            {dynamicCategories.map(cat => {
+              const active = activeCategory === cat.name;
               return (
                 <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`cursor-pointer px-4 py-2 rounded-lg text-[13px] font-bold transition-all duration-200 border ${
+                  key={cat.name}
+                  onClick={() => setActiveCategory(cat.name)}
+                  className={`cursor-pointer px-4 py-2 rounded-lg text-[13px] font-bold transition-all duration-200 border flex items-center gap-1.5 ${
                     active 
                       ? "bg-white/10 text-white border-white/20" 
                       : "bg-transparent text-zinc-500 border-transparent hover:bg-white/5 hover:text-zinc-300"
                   }`}
                 >
-                  {cat}
+                  {cat.name} <span className="opacity-60 text-[11px] font-medium">({cat.count})</span>
                 </button>
               );
             })}

@@ -16,8 +16,24 @@ export default function GymPage() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [mediaType, setMediaType] = useState<MediaType>("video");
   const [playingVideoId, setPlayingVideoId] = useState<{ id: string; title: string; streamUrl?: string } | null>(null);
+  
+  const [categories, setCategories] = useState<{name: string, count: number}[]>(
+    STATIC_CATEGORIES.map(c => ({ name: c, count: 0 }))
+  );
 
-  // Removed the useEffect redirect for unauthenticated status
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+        const res = await fetch(`${API_BASE}/media/categories?type=${mediaType}`);
+        const data = await res.json();
+        if (data.categories) setCategories(data.categories);
+      } catch (e) {
+        console.error("Failed to fetch categories:", e);
+      }
+    };
+    fetchCategories();
+  }, [mediaType]);
   // so the page is fully public.
 
   return (
@@ -39,13 +55,13 @@ export default function GymPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         {/* Category Tabs */}
         <div className="flex items-center gap-2 flex-wrap">
-          {STATIC_CATEGORIES.map((cat) => {
-            const active = activeCategory === cat;
+          {categories.map((cat) => {
+            const active = activeCategory === cat.name;
             return (
               <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className="cursor-pointer px-5 py-2 rounded-xl text-[14px] font-semibold transition-all duration-200 border"
+                key={cat.name}
+                onClick={() => setActiveCategory(cat.name)}
+                className="cursor-pointer px-5 py-2 rounded-xl text-[14px] font-semibold transition-all duration-200 border flex items-center gap-1.5"
                 style={active ? {
                   background: "rgba(255,140,0,0.15)",
                   borderColor: "rgba(255,140,0,0.35)",
@@ -56,7 +72,7 @@ export default function GymPage() {
                   color: "#71717a",
                 }}
               >
-                {cat}
+                {cat.name} <span className="opacity-60 text-[12px]">({cat.count})</span>
               </button>
             );
           })}

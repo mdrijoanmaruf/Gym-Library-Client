@@ -27,11 +27,13 @@ export default function VideoPlayerModal({ id, title, streamUrl, onClose }: Vide
   const [playing, setPlaying] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [bufferedPercent, setBufferedPercent] = useState(0);
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [showControls, setShowControls] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const resetControlsTimer = useCallback(() => {
@@ -52,6 +54,26 @@ export default function VideoPlayerModal({ id, title, streamUrl, onClose }: Vide
     if (!v) return;
     if (v.paused) { v.play(); setPlaying(true); }
     else { v.pause(); setPlaying(false); }
+  };
+
+  const updateBuffered = () => {
+    const v = videoRef.current;
+    if (v && v.buffered.length > 0) {
+      let bufferedEnd = 0;
+      for (let i = 0; i < v.buffered.length; i++) {
+        // If current time is within this buffered range, or right before it
+        if (v.currentTime >= v.buffered.start(i) && v.currentTime <= v.buffered.end(i)) {
+          bufferedEnd = v.buffered.end(i);
+          break;
+        }
+      }
+      // Fallback to the last buffered range if we just started
+      if (bufferedEnd === 0) {
+        bufferedEnd = v.buffered.end(v.buffered.length - 1);
+      }
+      
+      setBufferedPercent((bufferedEnd / (v.duration || 1)) * 100);
+    }
   };
 
   const seek = (delta: number) => {
@@ -92,24 +114,10 @@ export default function VideoPlayerModal({ id, title, streamUrl, onClose }: Vide
     setMuted(v.muted);
   };
 
-  const toggleFullscreen = () => {
-    const el = containerRef.current;
-    if (!el) return;
-    if (!document.fullscreenElement) {
-      el.requestFullscreen();
-      setFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setFullscreen(false);
-    }
-  };
-
-  const changeSpeed = () => {
-    const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
-    const nextIdx = (speeds.indexOf(speed) + 1) % speeds.length;
-    const next = speeds[nextIdx];
-    setSpeed(next);
-    if (videoRef.current) videoRef.current.playbackRate = next;
+  const changeSpeed = (newSpeed: number) => {
+    setSpeed(newSpeed);
+    if (videoRef.current) videoRef.current.playbackRate = newSpeed;
+    setShowSpeedMenu(false);
   };
 
   // Keyboard shortcuts
@@ -121,7 +129,6 @@ export default function VideoPlayerModal({ id, title, streamUrl, onClose }: Vide
       if (e.key === " ") { e.preventDefault(); togglePlay(); }
       if (e.key === "ArrowLeft") seek(-5);
       if (e.key === "ArrowRight") seek(5);
-      if (e.key === "f" || e.key === "F") toggleFullscreen();
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handler);
@@ -139,7 +146,7 @@ export default function VideoPlayerModal({ id, title, streamUrl, onClose }: Vide
       {/* Modal container */}
       <div
         ref={containerRef}
-        className="relative z-10 w-full max-w-[400px] mx-4 rounded-2xl overflow-hidden flex flex-col"
+        className="relative z-10 w-full max-w-[400px] mx-4 rounded-2xl overflow-visible flex flex-col"
         style={{
           background: "#0a0a0f",
           border: "1px solid rgba(255,255,255,0.08)",
@@ -159,13 +166,19 @@ export default function VideoPlayerModal({ id, title, streamUrl, onClose }: Vide
         </div>
 
         {/* Video */}
-        <div className="relative bg-black aspect-[9/16] group">
+        <div className="relative bg-black aspect-[9/16] group overflow-hidden rounded-b-2xl">
           <video
             ref={videoRef}
             src={streamUrl}
             className="w-full h-full object-contain"
             autoPlay
-            onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime || 0)}
+            onTimeUpdate={() => {
+              if (!isDragging) {
+                setCurrentTime(videoRef.current?.currentTime || 0);
+              }
+              updateBuffered();
+            }}
+            onProgress={updateBuffered}
             onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
             onEnded={() => setPlaying(false)}
             preload="metadata"
@@ -199,7 +212,7 @@ export default function VideoPlayerModal({ id, title, streamUrl, onClose }: Vide
 
         {/* Controls */}
         <div
-          className={`absolute bottom-0 left-0 right-0 px-5 py-4 space-y-3 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          className={`absolute bottom-0 left-0 right-0 z-30 px-5 py-4 space-y-3 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
           style={{ background: "linear-gradient(0deg, rgba(0,0,0,0.9) 0%, transparent 100%)" }}
         >
           {/* Seek bar */}
@@ -212,14 +225,28 @@ export default function VideoPlayerModal({ id, title, streamUrl, onClose }: Vide
               max={duration || 100}
               step={0.1}
               value={currentTime}
+              onMouseDown={() => setIsDragging(true)}
+              onTouchStart={() => setIsDragging(true)}
+              onMouseUp={(e) => {
+                setIsDragging(false);
+                const t = parseFloat((e.currentTarget as HTMLInputElement).value);
+                if (videoRef.current) videoRef.current.currentTime = t;
+              }}
+              onTouchEnd={(e) => {
+                setIsDragging(false);
+                const t = parseFloat((e.currentTarget as HTMLInputElement).value);
+                if (videoRef.current) videoRef.current.currentTime = t;
+              }}
               onChange={(e) => {
                 const t = parseFloat(e.target.value);
-                if (videoRef.current) videoRef.current.currentTime = t;
                 setCurrentTime(t);
               }}
               className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
               style={{
-                background: `linear-gradient(to right, #ff8c00 ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.1) 0%)`,
+                background: `linear-gradient(to right, 
+                  #ff8c00 0%, #ff8c00 ${(currentTime / (duration || 1)) * 100}%, 
+                  rgba(255,255,255,0.3) ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.3) ${Math.max(bufferedPercent, (currentTime / (duration || 1)) * 100)}%, 
+                  rgba(255,255,255,0.1) ${Math.max(bufferedPercent, (currentTime / (duration || 1)) * 100)}%, rgba(255,255,255,0.1) 100%)`,
               }}
             />
             <span className="text-[12px] text-zinc-500 w-10 shrink-0 text-right">{formatTime(duration)}</span>
@@ -269,17 +296,36 @@ export default function VideoPlayerModal({ id, title, streamUrl, onClose }: Vide
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Speed */}
+            <div className="flex items-center gap-2 relative">
+              {/* Speed Menu */}
+              {showSpeedMenu && (
+                <div className="absolute bottom-full right-0 mb-2 w-28 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl py-1 z-[100]">
+                  {[0.5, 0.75, 1, 1.25, 1.5, 2].map(s => (
+                    <button
+                      key={s}
+                      onClick={() => changeSpeed(s)}
+                      className={`w-full text-left px-4 py-2 text-[13px] font-semibold transition-colors ${
+                        speed === s 
+                          ? "bg-orange-500/10 text-orange-400" 
+                          : "text-zinc-400 hover:text-white hover:bg-white/[0.06]"
+                      }`}
+                    >
+                      {s === 1 ? "Normal" : `${s}x`}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Speed Toggle */}
               <button
-                onClick={changeSpeed}
-                className="px-2.5 py-1 rounded-lg text-[12px] font-bold text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-all border border-white/[0.07]"
+                onClick={() => setShowSpeedMenu(!showSpeedMenu)}
+                className={`px-2.5 py-1 rounded-lg text-[12px] font-bold transition-all border ${
+                  showSpeedMenu || speed !== 1
+                    ? "text-orange-400 bg-orange-500/10 border-orange-500/20"
+                    : "text-zinc-400 hover:text-white hover:bg-white/[0.06] border-white/[0.07]"
+                }`}
               >
                 {speed}×
-              </button>
-              {/* Fullscreen */}
-              <button onClick={toggleFullscreen} className="w-9 h-9 flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-all">
-                {fullscreen ? <FiMinimize className="w-4 h-4" /> : <FiMaximize className="w-4 h-4" />}
               </button>
             </div>
           </div>
