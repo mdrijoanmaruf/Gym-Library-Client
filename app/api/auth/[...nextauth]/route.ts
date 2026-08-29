@@ -37,6 +37,7 @@ export const authOptions: NextAuthOptions = {
               accessToken: data.accessToken,
               role: data.user.role,
               status: data.user.status,
+              image: data.user.image,
             };
           }
           return null;
@@ -57,6 +58,7 @@ export const authOptions: NextAuthOptions = {
             body: JSON.stringify({
               email: user.email,
               name: user.name,
+              image: user.image,
               googleId: account.providerAccountId,
             }),
           });
@@ -66,6 +68,7 @@ export const authOptions: NextAuthOptions = {
             (user as any).accessToken = data.accessToken;
             (user as any).role = data.user.role;
             (user as any).status = data.user.status;
+            user.image = data.user.image || user.image;
             return true;
           }
           return false;
@@ -82,6 +85,7 @@ export const authOptions: NextAuthOptions = {
         token.accessToken = (user as any).accessToken;
         token.role = (user as any).role;
         token.status = (user as any).status;
+        token.picture = user.image || token.picture;
       }
       return token;
     },
@@ -90,6 +94,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id = token.id as string;
         (session.user as any).role = token.role;
         (session.user as any).status = token.status;
+        session.user.image = (token.picture as string) || session.user.image;
       }
       (session as any).accessToken = token.accessToken;
       return session;

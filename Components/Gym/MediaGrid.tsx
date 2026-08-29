@@ -89,11 +89,23 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <div className="flex flex-col items-center gap-4 text-zinc-500">
-          <FiLoader className="w-8 h-8 animate-spin text-orange-400" />
-          <span className="text-sm">Loading exercises...</span>
-        </div>
+      <div className={`grid gap-4 mt-5 ${
+        mediaType === "gif"
+          ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+          : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+      }`}>
+        {[...Array(10)].map((_, i) => (
+          <div key={i} className="animate-pulse bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-lg backdrop-blur-sm">
+            <div className={`w-full bg-white/5 ${mediaType === "gif" ? "aspect-square" : "aspect-video"}`}></div>
+            <div className="p-4 space-y-3">
+              <div className="h-4 w-3/4 bg-white/10 rounded-md"></div>
+              <div className="flex justify-between items-center mt-2">
+                <div className="h-3 w-1/3 bg-white/5 rounded-md"></div>
+                <div className="h-8 w-8 bg-white/10 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   }

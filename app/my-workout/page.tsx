@@ -67,12 +67,18 @@ export default function MyWorkoutPage() {
     }
   };
 
-  if (status === "loading" || (status === "authenticated" && loading && exercises.length === 0)) {
+  if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4 text-zinc-500">
-          <FiLoader className="w-8 h-8 animate-spin text-orange-400" />
-          <span className="text-sm">Loading your routine...</span>
+      <div className="min-h-screen pt-28 pb-20 px-6 lg:px-12 max-w-[1600px] mx-auto">
+        <div className="animate-pulse space-y-6">
+          <div className="h-4 w-32 bg-white/10 rounded"></div>
+          <div className="h-12 w-64 bg-white/5 rounded"></div>
+          <div className="h-16 w-full max-w-4xl bg-white/5 rounded-2xl"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mt-10">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-lg h-64"></div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -178,8 +184,19 @@ export default function MyWorkoutPage() {
 
       {/* Grid */}
       {loading ? (
-        <div className="flex items-center justify-center py-20 text-orange-400">
-          <FiLoader className="w-8 h-8 animate-spin" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="animate-pulse bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-lg backdrop-blur-sm">
+              <div className={`w-full bg-white/5 ${mediaType === "gif" ? "aspect-square" : "aspect-video"}`}></div>
+              <div className="p-4 space-y-3">
+                <div className="h-4 w-3/4 bg-white/10 rounded-md"></div>
+                <div className="flex justify-between items-center mt-2">
+                  <div className="h-3 w-1/3 bg-white/5 rounded-md"></div>
+                  <div className="h-8 w-8 bg-white/10 rounded-full"></div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : filteredExercises.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center px-4 rounded-2xl" style={{ border: "1px dashed rgba(255,255,255,0.1)" }}>

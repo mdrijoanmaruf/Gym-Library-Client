@@ -57,26 +57,26 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // Block render until session is loaded
   if (status === "loading" || status === "unauthenticated" || role !== "admin") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="min-h-screen flex items-center justify-center bg-transparent">
         <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black relative flex">
+    <div className="min-h-screen bg-transparent relative flex">
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-zinc-950 border-r border-zinc-800 transition-transform duration-300 ease-in-out flex flex-col ${
+        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-black/10 border-r border-white/10 transition-transform duration-300 ease-in-out flex flex-col ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
         {/* Logo Header */}
-        <div className="h-20 px-6 flex items-center justify-between border-b border-zinc-800 shrink-0">
+        <div className="h-20 px-6 flex items-center justify-between border-b border-white/10 shrink-0">
           <Link href="/admin-dashboard" className="flex items-center gap-3">
             <div>
               <h1 className="text-white font-bold text-[14px] tracking-widest uppercase">
-                GymLibrary
+                Gym-Library
               </h1>
               <p className="text-orange-500 text-[10px] tracking-[0.2em] uppercase mt-0.5">
                 Admin Panel
@@ -124,8 +124,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </nav>
 
         {/* Quick Links (Bottom) */}
-        <div className="p-4 border-t border-zinc-800 shrink-0">
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-2 w-full">
+        <div className="p-4 border-t border-white/10 shrink-0">
+          <div className="bg-white/[0.02] border border-white/10 rounded-xl p-2 w-full">
             <Link
               href="/"
               className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs tracking-wide text-zinc-400 hover:bg-zinc-800 hover:text-white transition-all w-full"
@@ -156,7 +156,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Main Content Area */}
       <div className="lg:ml-64 flex-1 min-h-screen flex flex-col relative z-10 w-full">
         {/* Top Header */}
-        <header className="h-20 bg-black/80 backdrop-blur-md border-b border-zinc-800 sticky top-0 z-30 px-6 lg:px-8 flex items-center justify-between shadow-sm w-full">
+        <header className="h-20 bg-black/10 border-b border-white/10 sticky top-0 z-30 px-6 lg:px-8 flex items-center justify-between shadow-sm w-full">
           {/* Left Side */}
           <div className="flex items-center gap-4">
             <button

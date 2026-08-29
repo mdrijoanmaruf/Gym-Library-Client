@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 
 /* ─── constants ──────────────────────────────────────────────── */
 const DOTS        = 80;
@@ -28,6 +29,8 @@ interface Dot {
 export default function BackgroundAnimation() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mouse     = useRef({ x: -9999, y: -9999, active: false });
+  const pathname  = usePathname();
+  const isAdmin   = pathname.startsWith("/admin-dashboard");
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -228,7 +231,9 @@ export default function BackgroundAnimation() {
       />
 
       {/* vignette */}
-      <div className="absolute inset-0 bg-radial-vignette pointer-events-none" />
+      {!isAdmin && (
+        <div className="absolute inset-0 bg-radial-vignette pointer-events-none" />
+      )}
     </div>
   );
 }
