@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { FiCalendar, FiFilter, FiLoader } from "react-icons/fi";
+import { FiCalendar, FiFilter, FiLoader, FiImage, FiVideo } from "react-icons/fi";
 import GifCard from "@/Components/Gym/GifCard";
 import VideoCard from "@/Components/Gym/VideoCard";
 import VideoPlayerModal from "@/Components/Gym/VideoPlayerModal";
@@ -17,12 +17,16 @@ export default function MyWorkoutPage() {
   const router = useRouter();
   
   const [activeCategory, setActiveCategory] = useState("All");
-  const [activeDay, setActiveDay] = useState<DayOfWeek | "All">("All");
+  const [activeDay, setActiveDay] = useState<DayOfWeek | "All">(() => {
+    return new Date().toLocaleDateString("en-US", { weekday: "long" }) as DayOfWeek;
+  });
+  
+  const [mediaType, setMediaType] = useState<"gif" | "video">("video");
   
   const [exercises, setExercises] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  const [playingVideoId, setPlayingVideoId] = useState<{ id: string; title: string } | null>(null);
+  const [playingVideoId, setPlayingVideoId] = useState<{ id: string; title: string; streamUrl?: string } | null>(null);
   const [savingMedia, setSavingMedia] = useState<{ id: string; title: string, days: DayOfWeek[] } | null>(null);
 
   useEffect(() => {
@@ -76,6 +80,8 @@ export default function MyWorkoutPage() {
 
   if (!session) return null;
 
+  const filteredExercises = exercises.filter((e) => e.mediaId?.type === mediaType);
+
   return (
     <div className="min-h-screen pt-28 pb-20 px-6 lg:px-12 max-w-[1600px] mx-auto">
       {/* Header */}
@@ -104,7 +110,7 @@ export default function MyWorkoutPage() {
                 <button
                   key={day}
                   onClick={() => setActiveDay(day)}
-                  className={`px-4 py-2 rounded-lg text-[13px] font-bold transition-all duration-200 border ${
+                  className={`cursor-pointer px-4 py-2 rounded-lg text-[13px] font-bold transition-all duration-200 border ${
                     active 
                       ? "bg-orange-500 text-white border-orange-500 shadow-[0_0_15px_rgba(255,140,0,0.4)]" 
                       : "bg-black/20 text-zinc-400 border-white/10 hover:bg-white/5 hover:text-white"
@@ -127,7 +133,7 @@ export default function MyWorkoutPage() {
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
-                  className={`px-4 py-2 rounded-lg text-[13px] font-bold transition-all duration-200 border ${
+                  className={`cursor-pointer px-4 py-2 rounded-lg text-[13px] font-bold transition-all duration-200 border ${
                     active 
                       ? "bg-white/10 text-white border-white/20" 
                       : "bg-transparent text-zinc-500 border-transparent hover:bg-white/5 hover:text-zinc-300"
@@ -139,6 +145,35 @@ export default function MyWorkoutPage() {
             })}
           </div>
         </div>
+
+        {/* GIF / Video Toggle */}
+        <div className="flex items-center gap-1 p-1 rounded-xl shrink-0 w-fit xl:border-l border-white/10 xl:pl-6 mt-5 xl:mt-0"
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", height: "fit-content", alignSelf: "center" }}
+        >
+          {([
+            { value: "gif", label: "GIFs", icon: FiImage },
+            { value: "video", label: "Videos", icon: FiVideo },
+          ] as const).map(({ value, label, icon: Icon }) => {
+            const active = mediaType === value;
+            return (
+              <button
+                key={value}
+                onClick={() => setMediaType(value)}
+                className="cursor-pointer flex items-center gap-2 px-5 py-2.5 rounded-lg text-[14px] font-semibold transition-all duration-200"
+                style={active ? {
+                  background: "linear-gradient(135deg, rgba(255,180,71,0.9), rgba(255,140,0,0.9))",
+                  color: "#1c0a00",
+                  boxShadow: "0 4px 12px rgba(255,140,0,0.3)",
+                } : {
+                  color: "#71717a",
+                }}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Grid */}
@@ -146,7 +181,7 @@ export default function MyWorkoutPage() {
         <div className="flex items-center justify-center py-20 text-orange-400">
           <FiLoader className="w-8 h-8 animate-spin" />
         </div>
-      ) : exercises.length === 0 ? (
+      ) : filteredExercises.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center px-4 rounded-2xl" style={{ border: "1px dashed rgba(255,255,255,0.1)" }}>
           <FiCalendar className="w-12 h-12 text-zinc-600 mb-4" />
           <h3 className="text-xl font-bold text-zinc-300 mb-2">No exercises found</h3>
@@ -158,7 +193,7 @@ export default function MyWorkoutPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {exercises.map((saved) => {
+          {filteredExercises.map((saved) => {
             const item = saved.mediaId;
             if (item.type === "gif") {
               return (
@@ -167,6 +202,7 @@ export default function MyWorkoutPage() {
                   id={item._id}
                   title={item.title}
                   category={item.category}
+                  streamUrl={item.streamUrl}
                   savedDays={saved.days}
                   onHeartClick={() => setSavingMedia({ id: item._id, title: item.title, days: saved.days })}
                 />
@@ -178,7 +214,8 @@ export default function MyWorkoutPage() {
                 id={item._id}
                 title={item.title}
                 category={item.category}
-                onPlay={() => setPlayingVideoId({ id: item._id, title: item.title })}
+                streamUrl={item.streamUrl}
+                onPlay={() => setPlayingVideoId({ id: item._id, title: item.title, streamUrl: item.streamUrl })}
                 savedDays={saved.days}
                 onHeartClick={() => setSavingMedia({ id: item._id, title: item.title, days: saved.days })}
               />
@@ -191,6 +228,7 @@ export default function MyWorkoutPage() {
         <VideoPlayerModal
           id={playingVideoId.id}
           title={playingVideoId.title}
+          streamUrl={playingVideoId.streamUrl}
           onClose={() => setPlayingVideoId(null)}
         />
       )}

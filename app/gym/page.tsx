@@ -14,7 +14,8 @@ export default function GymPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState("All");
-  const [mediaType, setMediaType] = useState<MediaType>("gif");
+  const [mediaType, setMediaType] = useState<MediaType>("video");
+  const [playingVideoId, setPlayingVideoId] = useState<{ id: string; title: string; streamUrl?: string } | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -55,7 +56,7 @@ export default function GymPage() {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className="px-5 py-2 rounded-xl text-[14px] font-semibold transition-all duration-200 border"
+                className="cursor-pointer px-5 py-2 rounded-xl text-[14px] font-semibold transition-all duration-200 border"
                 style={active ? {
                   background: "rgba(255,140,0,0.15)",
                   borderColor: "rgba(255,140,0,0.35)",
@@ -85,7 +86,7 @@ export default function GymPage() {
               <button
                 key={value}
                 onClick={() => setMediaType(value)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[14px] font-semibold transition-all duration-200"
+                className="cursor-pointer flex items-center gap-2 px-5 py-2.5 rounded-lg text-[14px] font-semibold transition-all duration-200"
                 style={active ? {
                   background: "linear-gradient(135deg, rgba(255,180,71,0.9), rgba(255,140,0,0.9))",
                   color: "#1c0a00",

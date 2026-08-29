@@ -9,6 +9,7 @@ import {
 interface VideoPlayerModalProps {
   id: string;
   title: string;
+  streamUrl?: string;
   onClose: () => void;
 }
 
@@ -18,7 +19,7 @@ function formatTime(secs: number) {
   return `${m}:${s}`;
 }
 
-export default function VideoPlayerModal({ id, title, onClose }: VideoPlayerModalProps) {
+export default function VideoPlayerModal({ id, title, streamUrl, onClose }: VideoPlayerModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const seekBarRef = useRef<HTMLInputElement>(null);
@@ -136,7 +137,7 @@ export default function VideoPlayerModal({ id, title, onClose }: VideoPlayerModa
         <div className="relative bg-black aspect-[9/16] group" onClick={togglePlay}>
           <video
             ref={videoRef}
-            src={`/api/media/stream/${id}`}
+            src={streamUrl}
             className="w-full h-full object-contain"
             autoPlay
             onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime || 0)}

@@ -13,6 +13,7 @@ interface MediaItem {
   title: string;
   category: string;
   type: "gif" | "video";
+  streamUrl?: string;
 }
 
 interface MediaGridProps {
@@ -26,7 +27,7 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [playingVideo, setPlayingVideo] = useState<{ id: string; title: string } | null>(null);
+  const [playingVideo, setPlayingVideo] = useState<{ id: string; title: string; streamUrl?: string } | null>(null);
 
   // Saved exercises state
   const [savedMap, setSavedMap] = useState<Record<string, DayOfWeek[]>>({});
@@ -129,6 +130,7 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
                 id={item._id}
                 title={item.title}
                 category={item.category}
+                streamUrl={item.streamUrl}
                 savedDays={savedDays}
                 onHeartClick={() => setSavingMedia({ id: item._id, title: item.title })}
               />
@@ -140,7 +142,8 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
               id={item._id}
               title={item.title}
               category={item.category}
-              onPlay={() => setPlayingVideo({ id: item._id, title: item.title })}
+              streamUrl={item.streamUrl}
+              onPlay={() => setPlayingVideo({ id: item._id, title: item.title, streamUrl: item.streamUrl })}
               savedDays={savedDays}
               onHeartClick={() => setSavingMedia({ id: item._id, title: item.title })}
             />
@@ -174,6 +177,7 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
         <VideoPlayerModal
           id={playingVideo.id}
           title={playingVideo.title}
+          streamUrl={playingVideo.streamUrl}
           onClose={() => setPlayingVideo(null)}
         />
       )}

@@ -8,12 +8,13 @@ interface VideoCardProps {
   id: string;
   title: string;
   category: string;
+  streamUrl?: string;
   savedDays?: DayOfWeek[];
   onPlay: (id: string, title: string) => void;
   onHeartClick?: () => void;
 }
 
-export default function VideoCard({ id, title, category, savedDays = [], onPlay, onHeartClick }: VideoCardProps) {
+export default function VideoCard({ id, title, category, streamUrl, savedDays = [], onPlay, onHeartClick }: VideoCardProps) {
   const isSaved = savedDays.length > 0;
   return (
     <div
@@ -28,7 +29,7 @@ export default function VideoCard({ id, title, category, savedDays = [], onPlay,
       {/* Video thumbnail using the first frame of the video */}
       <div className="relative aspect-video bg-zinc-900 flex items-center justify-center overflow-hidden">
         <video 
-          src={`/api/media/stream/${id}#t=0.1`}
+          src={streamUrl ? `${streamUrl}#t=0.1` : undefined}
           className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-300"
           preload="metadata"
           muted

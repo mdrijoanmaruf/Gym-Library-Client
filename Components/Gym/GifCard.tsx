@@ -8,11 +8,12 @@ interface GifCardProps {
   id: string;
   title: string;
   category: string;
+  streamUrl?: string;
   savedDays?: DayOfWeek[];
   onHeartClick?: () => void;
 }
 
-export default function GifCard({ id, title, category, savedDays = [], onHeartClick }: GifCardProps) {
+export default function GifCard({ id, title, category, streamUrl, savedDays = [], onHeartClick }: GifCardProps) {
   const isSaved = savedDays.length > 0;
 
   return (
@@ -37,7 +38,7 @@ export default function GifCard({ id, title, category, savedDays = [], onHeartCl
       <div className="relative aspect-square bg-zinc-900 overflow-hidden">
         {/* Lazy-load the gif via the proxy stream route */}
         <img
-          src={`/api/media/stream/${id}`}
+          src={streamUrl}
           alt={title}
           loading="lazy"
           className="w-full h-full object-cover"
