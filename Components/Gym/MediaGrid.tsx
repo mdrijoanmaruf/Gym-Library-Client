@@ -5,8 +5,9 @@ import GifCard from "./GifCard";
 import VideoCard from "./VideoCard";
 import VideoPlayerModal from "./VideoPlayerModal";
 import SaveExerciseModal, { DayOfWeek } from "./SaveExerciseModal";
-import { FiLoader } from "react-icons/fi";
-import { signOut } from "next-auth/react";
+import { FiLoader, FiAlertCircle } from "react-icons/fi";
+import { signOut, useSession } from "next-auth/react";
+import Link from "next/link";
 
 interface MediaItem {
   _id: string;
@@ -29,19 +30,22 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [playingVideo, setPlayingVideo] = useState<{ id: string; title: string; streamUrl?: string } | null>(null);
 
-  // Saved exercises state
+  const { status } = useSession();
   const [savedMap, setSavedMap] = useState<Record<string, DayOfWeek[]>>({});
   const [savingMedia, setSavingMedia] = useState<{ id: string; title: string } | null>(null);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
-  // Fetch saved IDs on mount
+  // Fetch saved IDs on mount (only if authenticated)
   useEffect(() => {
+    if (status !== "authenticated") return;
+    
     fetch("/api/saved-exercises/ids")
       .then(res => res.json())
       .then(json => {
         if (json.data) setSavedMap(json.data);
       })
       .catch(err => console.error("Failed to fetch saved ids", err));
-  }, []);
+  }, [status]);
 
   const fetchMedia = useCallback(async (pageNum: number, reset: boolean) => {
     if (reset) setLoading(true);
@@ -57,10 +61,6 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
       if (category !== "All") params.set("category", category);
 
       const res = await fetch(`/api/media?${params.toString()}`);
-      if (res.status === 401) {
-        signOut({ callbackUrl: "/login" });
-        return;
-      }
       if (!res.ok) throw new Error("Failed to fetch media");
       const json = await res.json();
 
@@ -132,7 +132,13 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
                 category={item.category}
                 streamUrl={item.streamUrl}
                 savedDays={savedDays}
-                onHeartClick={() => setSavingMedia({ id: item._id, title: item.title })}
+                onHeartClick={() => {
+                  if (status === "unauthenticated") {
+                    setShowLoginPrompt(true);
+                  } else {
+                    setSavingMedia({ id: item._id, title: item.title });
+                  }
+                }}
               />
             );
           }
@@ -145,7 +151,13 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
               streamUrl={item.streamUrl}
               onPlay={() => setPlayingVideo({ id: item._id, title: item.title, streamUrl: item.streamUrl })}
               savedDays={savedDays}
-              onHeartClick={() => setSavingMedia({ id: item._id, title: item.title })}
+              onHeartClick={() => {
+                if (status === "unauthenticated") {
+                  setShowLoginPrompt(true);
+                } else {
+                  setSavingMedia({ id: item._id, title: item.title });
+                }
+              }}
             />
           );
         })}
@@ -198,6 +210,36 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
             });
           }}
         />
+      )}
+
+      {/* Login Prompt Modal */}
+      {showLoginPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-2xl relative">
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-orange-500/20 rounded-full blur-2xl pointer-events-none" />
+            <div className="flex justify-center mb-4 text-orange-400">
+              <FiAlertCircle className="w-12 h-12" />
+            </div>
+            <h3 className="text-xl font-bold text-center text-white mb-2">Login Required</h3>
+            <p className="text-zinc-400 text-center mb-6">
+              You need to be logged in to save exercises and create a workout plan.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLoginPrompt(false)}
+                className="flex-1 py-3 px-4 rounded-xl text-sm font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <Link
+                href="/login"
+                className="flex-1 py-3 px-4 rounded-xl text-sm font-semibold text-black bg-orange-400 hover:bg-orange-500 transition-colors text-center"
+              >
+                Login Now
+              </Link>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

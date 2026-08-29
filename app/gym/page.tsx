@@ -17,19 +17,8 @@ export default function GymPage() {
   const [mediaType, setMediaType] = useState<MediaType>("video");
   const [playingVideoId, setPlayingVideoId] = useState<{ id: string; title: string; streamUrl?: string } | null>(null);
 
-  useEffect(() => {
-    if (status === "unauthenticated") router.push("/login");
-  }, [status, router]);
-
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!session) return null;
+  // Removed the useEffect redirect for unauthenticated status
+  // so the page is fully public.
 
   return (
     <div className="min-h-screen pt-28 pb-20 px-6 lg:px-12 max-w-[1600px] mx-auto">

@@ -11,13 +11,18 @@ async function getToken() {
 
 export async function GET(req: NextRequest) {
   const token = await getToken();
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+  // We no longer require a token here since media is now public
+  
   const { searchParams } = new URL(req.url);
   const upstream = `${API_BASE}/media?${searchParams.toString()}`;
 
+  const headers: HeadersInit = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(upstream, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers,
     cache: "no-store",
   });
 
