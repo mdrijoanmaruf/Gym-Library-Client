@@ -60,6 +60,31 @@ export default function VideoPlayerModal({ id, title, streamUrl, onClose }: Vide
     v.currentTime = Math.max(0, Math.min(v.duration, v.currentTime + delta));
   };
 
+  const lastClickRef = useRef<{ time: number, side: 'left' | 'right' | 'center' }>({ time: 0, side: 'center' });
+  const [showSkipOverlay, setShowSkipOverlay] = useState<{ side: 'left' | 'right', text: string } | null>(null);
+
+  const handleVideoTap = (e: React.MouseEvent<HTMLDivElement>, side: 'left' | 'right' | 'center') => {
+    const now = Date.now();
+    const last = lastClickRef.current;
+    
+    // Double tap threshold: 300ms
+    if (now - last.time < 300 && last.side === side && side !== 'center') {
+      // Double tap!
+      seek(side === 'left' ? -5 : 5);
+      
+      // Show skip animation
+      setShowSkipOverlay({ side, text: side === 'left' ? '-5s' : '+5s' });
+      setTimeout(() => setShowSkipOverlay(null), 500);
+      
+      // Reset so 3 taps doesn't trigger 2 double-taps
+      lastClickRef.current = { time: 0, side: 'center' };
+    } else {
+      // Single tap (toggle play after a tiny delay to allow double-tap to cancel it if we wanted, but immediate is fine)
+      togglePlay();
+      lastClickRef.current = { time: now, side };
+    }
+  };
+
   const toggleMute = () => {
     const v = videoRef.current;
     if (!v) return;
@@ -134,7 +159,7 @@ export default function VideoPlayerModal({ id, title, streamUrl, onClose }: Vide
         </div>
 
         {/* Video */}
-        <div className="relative bg-black aspect-[9/16] group" onClick={togglePlay}>
+        <div className="relative bg-black aspect-[9/16] group">
           <video
             ref={videoRef}
             src={streamUrl}
@@ -146,9 +171,24 @@ export default function VideoPlayerModal({ id, title, streamUrl, onClose }: Vide
             preload="metadata"
           />
 
+          {/* Invisible Overlay Zones for Tap Detection */}
+          <div className="absolute inset-0 z-10 flex">
+            <div className="w-1/3 h-full" onClick={(e) => handleVideoTap(e, 'left')} />
+            <div className="w-1/3 h-full" onClick={(e) => handleVideoTap(e, 'center')} />
+            <div className="w-1/3 h-full" onClick={(e) => handleVideoTap(e, 'right')} />
+          </div>
+
+          {/* Double Tap Skip Animation Overlay */}
+          {showSkipOverlay && (
+            <div className={`absolute top-0 bottom-0 w-1/2 flex flex-col items-center justify-center bg-white/10 animate-pulse pointer-events-none z-20 ${showSkipOverlay.side === 'left' ? 'left-0 rounded-r-[100%]' : 'right-0 rounded-l-[100%]'}`}>
+              {showSkipOverlay.side === 'left' ? <FiRewind className="w-8 h-8 text-white mb-2" /> : <FiFastForward className="w-8 h-8 text-white mb-2" />}
+              <span className="text-white font-bold text-lg">{showSkipOverlay.text}</span>
+            </div>
+          )}
+
           {/* Play/pause overlay flash */}
           {!playing && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
               <div className="w-20 h-20 rounded-full flex items-center justify-center"
                 style={{ background: "rgba(255,140,0,0.25)", backdropFilter: "blur(4px)" }}>
                 <FiPlay className="w-9 h-9 text-orange-400 ml-1" fill="currentColor" />

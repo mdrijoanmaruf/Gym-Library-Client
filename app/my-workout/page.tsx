@@ -231,8 +231,11 @@ export default function MyWorkoutPage() {
                 id={item._id}
                 title={item.title}
                 category={item.category}
-                streamUrl={item.streamUrl}
-                onPlay={() => setPlayingVideoId({ id: item._id, title: item.title, streamUrl: item.streamUrl })}
+                thumbnailUrl={item.thumbnailUrl}
+                onPlay={() => {
+                  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+                  setPlayingVideoId({ id: item._id, title: item.title, streamUrl: `${API_BASE}/media/stream/${item._id}` });
+                }}
                 savedDays={saved.days}
                 onHeartClick={() => setSavingMedia({ id: item._id, title: item.title, days: saved.days })}
               />

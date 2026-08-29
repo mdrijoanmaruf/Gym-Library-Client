@@ -3,19 +3,21 @@
 import { FiPlay } from "react-icons/fi";
 import HeartButton from "./HeartButton";
 import { DayOfWeek } from "./SaveExerciseModal";
+import { useEffect, useRef, useState } from "react";
 
 interface VideoCardProps {
   id: string;
   title: string;
   category: string;
-  streamUrl?: string;
+  thumbnailUrl?: string;
   savedDays?: DayOfWeek[];
   onPlay: (id: string, title: string) => void;
   onHeartClick?: () => void;
 }
 
-export default function VideoCard({ id, title, category, streamUrl, savedDays = [], onPlay, onHeartClick }: VideoCardProps) {
+export default function VideoCard({ id, title, category, thumbnailUrl, savedDays = [], onPlay, onHeartClick }: VideoCardProps) {
   const isSaved = savedDays.length > 0;
+
   return (
     <div
       className="group relative rounded-2xl overflow-hidden cursor-pointer"
@@ -26,15 +28,20 @@ export default function VideoCard({ id, title, category, streamUrl, savedDays = 
       }}
       onClick={() => onPlay(id, title)}
     >
-      {/* Video thumbnail using the first frame of the video */}
+      {/* Video thumbnail using the generated thumbnail image */}
       <div className="relative aspect-video bg-zinc-900 flex items-center justify-center overflow-hidden">
-        <video 
-          src={streamUrl ? `${streamUrl}#t=0.1` : undefined}
-          className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-300"
-          preload="metadata"
-          muted
-          playsInline
-        />
+        {thumbnailUrl ? (
+          <img 
+            src={thumbnailUrl}
+            alt={title}
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-300"
+          />
+        ) : (
+          <div className="absolute inset-0 w-full h-full bg-zinc-800 flex items-center justify-center opacity-60">
+            <FiPlay className="w-8 h-8 text-zinc-600" />
+          </div>
+        )}
         <div
           className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
           style={{ background: "radial-gradient(circle at center, rgba(255,140,0,0.15) 0%, transparent 70%)" }}

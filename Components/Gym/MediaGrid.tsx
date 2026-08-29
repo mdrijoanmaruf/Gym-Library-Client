@@ -15,6 +15,7 @@ interface MediaItem {
   category: string;
   type: "gif" | "video";
   streamUrl?: string;
+  thumbnailUrl?: string;
 }
 
 interface MediaGridProps {
@@ -160,8 +161,10 @@ export default function MediaGrid({ category, mediaType }: MediaGridProps) {
               id={item._id}
               title={item.title}
               category={item.category}
-              streamUrl={item.streamUrl}
-              onPlay={() => setPlayingVideo({ id: item._id, title: item.title, streamUrl: item.streamUrl })}
+              thumbnailUrl={item.thumbnailUrl}
+              onPlay={() => {
+                setPlayingVideo({ id: item._id, title: item.title, streamUrl: item.streamUrl });
+              }}
               savedDays={savedDays}
               onHeartClick={() => {
                 if (status === "unauthenticated") {
