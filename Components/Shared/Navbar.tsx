@@ -5,21 +5,33 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { FiArrowRight, FiX, FiChevronRight } from "react-icons/fi";
+import { FiArrowRight, FiX, FiChevronRight, FiShield, FiGrid, FiLogOut, FiHome, FiVideo, FiActivity, FiMail } from "react-icons/fi";
 
 const NAV_LINKS = [
-  { label: "Home", href: "/" },
-  { label: "Gym", href: "/gym" },
-  { label: "My Workout", href: "/my-workout" },
-  { label: "Contact", href: "/contact" },
+  { label: "Home", href: "/", Icon: FiHome },
+  { label: "Gym", href: "/gym", Icon: FiVideo },
+  { label: "My Workout", href: "/my-workout", Icon: FiActivity },
+  { label: "Contact", href: "/contact", Icon: FiMail },
 ];
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const pathname = usePathname();
   const { data: session } = useSession();
   const drawerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node))
+        setDropdownOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [dropdownOpen]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -41,6 +53,8 @@ export default function Navbar() {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
+
+  if (pathname.startsWith("/admin-dashboard")) return null;
 
   return (
     <>
@@ -167,31 +181,92 @@ export default function Navbar() {
                     {active && (
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-orange-400 shadow-[0_0_8px_3px_rgba(255,140,0,0.5)]" />
                     )}
-                    <span className={active ? "pl-3" : ""}>{link.label}</span>
+                    <span className={`flex items-center gap-2 ${active ? "pl-3.5" : ""}`}>
+                      <link.Icon className={`w-4 h-4 ${active ? "text-orange-400" : "text-zinc-400 group-hover:text-white transition-colors"}`} />
+                      <span>{link.label}</span>
+                    </span>
                   </Link>
                 </li>
               );
             })}
+            
+
           </ul>
 
           {/* ── DESKTOP ACTIONS ── */}
           <div className="hidden lg:flex items-center gap-3">
             {session ? (
-              <div className="flex items-center gap-4">
-                <Link href="/gym" className="flex items-center gap-2 group hover:opacity-80 transition-opacity">
-                  <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 font-bold border border-orange-500/30">
-                    {session.user?.name?.[0]?.toUpperCase() || "U"}
-                  </div>
-                  <span className="text-[14.5px] font-medium text-white group-hover:text-orange-400 transition-colors">
-                    {session.user?.name}
-                  </span>
-                </Link>
+              <div className="relative" ref={dropdownRef} onMouseEnter={() => setDropdownOpen(true)} onMouseLeave={() => setDropdownOpen(false)}>
                 <button
-                  onClick={() => signOut({ callbackUrl: '/' })}
-                  className="px-4 py-2 rounded-xl text-[13px] font-semibold text-zinc-400 hover:text-white border border-white/[0.09] hover:border-white/[0.18] transition-all hover:bg-white/[0.04]"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className={`flex items-center gap-3 px-2 py-2 pr-4 rounded-full border transition-all focus:outline-none text-left ${
+                    dropdownOpen 
+                      ? "border-orange-500/30 bg-orange-500/10" 
+                      : "border-white/10 bg-white/[0.02] hover:bg-white/[0.06]"
+                  }`}
                 >
-                  Log Out
+                  {session.user?.image ? (
+                    <img src={session.user.image} alt={session.user.name || "User"} className="w-9 h-9 rounded-full border border-zinc-700 object-cover shrink-0" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-orange-500 to-orange-400 flex items-center justify-center text-white font-bold border border-orange-500/30 shadow-sm shrink-0">
+                      {session.user?.name?.[0]?.toUpperCase() || "U"}
+                    </div>
+                  )}
+                  <div className="flex flex-col hidden sm:flex">
+                    <span className="text-[14px] font-semibold text-white leading-tight">
+                      {session.user?.name}
+                    </span>
+                    <span className="text-[11px] text-zinc-400 leading-tight mt-0.5 max-w-[130px] truncate">
+                      {session.user?.email}
+                    </span>
+                  </div>
                 </button>
+                
+                {/* Profile Dropdown Container with invisible padding to prevent hover loss */}
+                {dropdownOpen && (
+                  <div className="absolute top-full right-0 pt-2 w-56 z-50">
+                    <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-200">
+                      <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
+                        <p className="text-[14px] font-semibold text-white truncate">{session.user?.name}</p>
+                        <p className="text-[12px] text-zinc-400 truncate">{session.user?.email}</p>
+                      </div>
+                      
+                      <div className="py-1">
+                        {(session.user as any)?.role === "admin" && (
+                          <Link
+                            href="/admin-dashboard"
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-orange-400 hover:bg-orange-500/20 transition-colors"
+                          >
+                            <FiShield className="w-4 h-4" />
+                            Admin Panel
+                          </Link>
+                        )}
+                        <Link
+                          href="/my-workout"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition-colors"
+                        >
+                          <FiGrid className="w-4 h-4 text-zinc-400" />
+                          My Workouts
+                        </Link>
+                      </div>
+                      
+                      <div className="py-1 border-t border-white/10">
+                        <button
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            signOut({ callbackUrl: '/' });
+                          }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-red-400 hover:bg-red-500/20 transition-colors text-left"
+                        >
+                          <FiLogOut className="w-4 h-4 text-red-400/80" />
+                          Log Out
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <>
@@ -304,27 +379,49 @@ export default function Navbar() {
                     }
                   `}
                 >
-                  {link.label}
+                  <div className="flex items-center gap-3">
+                    <link.Icon className={`w-5 h-5 ${active ? "text-orange-400" : "text-zinc-500"}`} />
+                    <span>{link.label}</span>
+                  </div>
                   <FiChevronRight className={`w-4 h-4 ${active ? "text-orange-400" : "text-zinc-600"}`} />
                 </Link>
               );
             })}
+            
+            {(session?.user as any)?.role === "admin" && (
+              <Link
+                href="/admin-dashboard"
+                onClick={() => setMobileOpen(false)}
+                className={`
+                  flex items-center justify-between px-4 py-3.5 rounded-xl
+                  text-[15px] font-medium tracking-wide
+                  border transition-all duration-200
+                  text-orange-400 bg-orange-500/10 border-orange-500/20
+                `}
+              >
+                <span className="flex items-center gap-2"><FiShield className="w-4 h-4" /> Admin Panel</span>
+                <FiChevronRight className="w-4 h-4 text-orange-400" />
+              </Link>
+            )}
           </nav>
 
           {/* CTAs */}
           <div className="px-5 py-6 space-y-3 shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
             {session ? (
               <>
-                <Link
-                  href="/gym"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 py-3 px-4 rounded-xl border border-white/[0.1] bg-white/[0.02]"
-                >
-                  <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 font-bold border border-orange-500/30">
-                    {session.user?.name?.[0]?.toUpperCase() || "U"}
+                <div className="flex items-center gap-3 py-3 px-4 rounded-xl border border-white/[0.1] bg-white/[0.02]">
+                  {session.user?.image ? (
+                    <img src={session.user.image} alt="User" className="w-10 h-10 rounded-full border border-zinc-700 object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-500 to-orange-400 flex items-center justify-center text-white font-bold border border-orange-500/30">
+                      {session.user?.name?.[0]?.toUpperCase() || "U"}
+                    </div>
+                  )}
+                  <div className="flex flex-col">
+                    <span className="text-[15px] font-medium text-white leading-tight">{session.user?.name}</span>
+                    <span className="text-[12px] text-zinc-400 leading-tight mt-0.5 truncate max-w-[160px]">{session.user?.email}</span>
                   </div>
-                  <span className="text-[15px] font-medium text-white">{session.user?.name}</span>
-                </Link>
+                </div>
                 <button
                   onClick={() => signOut({ callbackUrl: '/' })}
                   className="block w-full text-center py-3 rounded-xl text-[15px] font-semibold text-zinc-400 border border-white/[0.1] hover:border-white/20 hover:text-white hover:bg-white/[0.05] transition-all duration-200"
