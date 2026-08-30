@@ -79,13 +79,19 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account, trigger, session }) {
+      if (trigger === "update" && session?.image) {
+        token.picture = session.image;
+      }
       if (user) {
         token.id = user.id;
         token.accessToken = (user as any).accessToken;
         token.role = (user as any).role;
         token.status = (user as any).status;
         token.picture = user.image || token.picture;
+      }
+      if (account) {
+        token.provider = account.provider;
       }
       return token;
     },
@@ -94,6 +100,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id = token.id as string;
         (session.user as any).role = token.role;
         (session.user as any).status = token.status;
+        (session.user as any).provider = token.provider;
         session.user.image = (token.picture as string) || session.user.image;
       }
       (session as any).accessToken = token.accessToken;

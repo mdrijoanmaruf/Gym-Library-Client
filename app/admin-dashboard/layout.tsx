@@ -177,7 +177,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   <img
                     src={session?.user?.image}
                     alt="Admin"
-                    className="w-9 h-9 rounded-full border border-zinc-700"
+                    className="w-9 h-9 rounded-full border border-zinc-700 object-cover"
                   />
                 ) : (
                   <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-orange-500 to-orange-400 flex items-center justify-center text-white font-bold text-sm shadow-md">
