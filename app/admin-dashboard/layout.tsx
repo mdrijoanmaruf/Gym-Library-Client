@@ -12,6 +12,7 @@ import {
   FiX,
   FiHome,
   FiLogOut,
+  FiMessageSquare,
 } from "react-icons/fi";
 import { useSession, signOut } from "next-auth/react";
 
@@ -47,6 +48,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { href: "/admin-dashboard", label: "Dashboard", Icon: FiGrid, exact: true },
     { href: "/admin-dashboard/users", label: "Users & Security", Icon: FiUsers },
     { href: "/admin-dashboard/videos", label: "Manage Videos", Icon: FiVideo },
+    { href: "/admin-dashboard/messages", label: "Messages", Icon: FiMessageSquare },
     { href: "/admin-dashboard/settings", label: "Settings", Icon: FiSettings },
   ];
 
