@@ -3,14 +3,15 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { FiCalendar, FiFilter, FiLoader, FiImage, FiVideo } from "react-icons/fi";
+import { FiCalendar, FiFilter, FiLoader, FiImage, FiVideo, FiEdit2, FiChevronDown } from "react-icons/fi";
 import GifCard from "@/Components/Gym/GifCard";
 import VideoCard from "@/Components/Gym/VideoCard";
 import VideoPlayerModal from "@/Components/Gym/VideoPlayerModal";
 import SaveExerciseModal, { DayOfWeek } from "@/Components/Gym/SaveExerciseModal";
+import Swal from "sweetalert2";
 
 const STATIC_CATEGORIES = ["All", "Abs", "Arms", "Back", "Chest", "Legs", "Shoulders"];
-const DAYS: (DayOfWeek | "All")[] = ["All", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DAYS: (DayOfWeek | "All")[] = ["All", "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
 export default function MyWorkoutPage() {
   const { data: session, status } = useSession();
@@ -24,6 +25,7 @@ export default function MyWorkoutPage() {
   const [mediaType, setMediaType] = useState<"gif" | "video">("video");
   
   const [exercises, setExercises] = useState<any[]>([]);
+  const [dayAliases, setDayAliases] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   
   const [playingVideoId, setPlayingVideoId] = useState<{ id: string; title: string; streamUrl?: string } | null>(null);
@@ -51,11 +53,62 @@ export default function MyWorkoutPage() {
     }
   };
 
+  const fetchProfile = async () => {
+    try {
+      const res = await fetch(`/api/users/profile`);
+      if (res.ok) {
+        const json = await res.json();
+        setDayAliases(json.data?.dayAliases || {});
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleEditAlias = async () => {
+    if (activeDay === "All") return;
+    const currentAlias = dayAliases[activeDay] || "";
+    
+    const { value: newAlias } = await Swal.fire({
+      title: `Rename ${activeDay}`,
+      input: "text",
+      inputLabel: "Custom Name (e.g., Chest + Back)",
+      inputValue: currentAlias,
+      showCancelButton: true,
+      inputPlaceholder: "Enter a custom name",
+      confirmButtonColor: "#f97316",
+      cancelButtonColor: "#3f3f46"
+    });
+
+    if (newAlias !== undefined) {
+      try {
+        const res = await fetch("/api/users/day-aliases", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ day: activeDay, alias: newAlias.trim() })
+        });
+        if (res.ok) {
+          const json = await res.json();
+          setDayAliases(json.data || {});
+          Swal.fire({ title: "Saved!", icon: "success", timer: 1500, showConfirmButton: false });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
   useEffect(() => {
     if (status === "authenticated") {
       fetchSavedExercises();
     }
   }, [activeDay, status]); // Only refetch when day changes or auth status changes, not category
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetchProfile();
+    }
+  }, [status]);
 
   const handleSaveUpdate = (mediaId: string, newDays: DayOfWeek[]) => {
     if (newDays.length === 0) {
@@ -98,7 +151,7 @@ export default function MyWorkoutPage() {
   const dynamicCategories = STATIC_CATEGORIES.map(cat => ({
     name: cat,
     count: cat === "All" ? filteredByType.length : (categoryCounts[cat] || 0)
-  }));
+  })).filter(cat => cat.count > 0);
 
   return (
     <div className="min-h-screen pt-28 pb-20 px-6 lg:px-12 max-w-[1600px] mx-auto">
@@ -116,48 +169,57 @@ export default function MyWorkoutPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col xl:flex-row justify-between gap-6 mb-10 p-6 rounded-2xl" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+      <div className="flex flex-col xl:flex-row justify-between gap-4 sm:gap-6 mb-6 sm:mb-10 p-4 sm:p-6 rounded-2xl" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
         
-        {/* Days Filter */}
+        {/* Days Filter (Dropdown) */}
         <div className="space-y-3 flex-1">
-          <h3 className="text-sm font-semibold text-zinc-400 flex items-center gap-2 uppercase tracking-wide"><FiCalendar /> Day of Week</h3>
-          <div className="flex flex-wrap gap-2">
-            {DAYS.map(day => {
-              const active = activeDay === day;
-              return (
-                <button
-                  key={day}
-                  onClick={() => setActiveDay(day)}
-                  className={`cursor-pointer px-4 py-2 rounded-lg text-[13px] font-bold transition-all duration-200 border ${
-                    active 
-                      ? "bg-orange-500 text-white border-orange-500 shadow-[0_0_15px_rgba(255,140,0,0.4)]" 
-                      : "bg-black/20 text-zinc-400 border-white/10 hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  {day}
-                </button>
-              );
-            })}
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-zinc-400 flex items-center gap-2 uppercase tracking-wide"><FiCalendar /> Day of Week</h3>
+            {activeDay !== "All" && (
+              <button 
+                onClick={handleEditAlias}
+                className="text-xs font-bold text-orange-400 hover:text-orange-300 flex items-center gap-1.5 transition-colors"
+              >
+                <FiEdit2 className="w-3.5 h-3.5" /> Edit Name
+              </button>
+            )}
+          </div>
+          
+          <div className="relative">
+            <select
+              value={activeDay}
+              onChange={(e) => setActiveDay(e.target.value as DayOfWeek | "All")}
+              className="w-full appearance-none bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3.5 text-white text-sm sm:text-base font-semibold focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all shadow-inner"
+            >
+              {DAYS.map(day => (
+                <option key={day} value={day} className="bg-zinc-900 text-white">
+                  {day} {day !== "All" && dayAliases[day] ? `- ${dayAliases[day]}` : ""}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
+              <FiChevronDown className="w-5 h-5" />
+            </div>
           </div>
         </div>
 
         {/* Category Filter */}
-        <div className="space-y-3 flex-1 xl:max-w-xl border-t xl:border-t-0 xl:border-l border-white/10 pt-5 xl:pt-0 xl:pl-6">
+        <div className="space-y-3 flex-1 xl:max-w-xl border-t xl:border-t-0 xl:border-l border-white/10 pt-4 sm:pt-5 xl:pt-0 xl:pl-6">
           <h3 className="text-sm font-semibold text-zinc-400 flex items-center gap-2 uppercase tracking-wide"><FiFilter /> Muscle Group</h3>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {dynamicCategories.map(cat => {
               const active = activeCategory === cat.name;
               return (
                 <button
                   key={cat.name}
                   onClick={() => setActiveCategory(cat.name)}
-                  className={`cursor-pointer px-4 py-2 rounded-lg text-[13px] font-bold transition-all duration-200 border flex items-center gap-1.5 ${
+                  className={`cursor-pointer px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-[12px] sm:text-[13px] font-bold transition-all duration-200 border flex items-center gap-1 sm:gap-1.5 ${
                     active 
                       ? "bg-white/10 text-white border-white/20" 
                       : "bg-transparent text-zinc-500 border-transparent hover:bg-white/5 hover:text-zinc-300"
                   }`}
                 >
-                  {cat.name} <span className="opacity-60 text-[11px] font-medium">({cat.count})</span>
+                  {cat.name} <span className="opacity-60 text-[10px] sm:text-[11px] font-medium">({cat.count})</span>
                 </button>
               );
             })}
@@ -165,8 +227,8 @@ export default function MyWorkoutPage() {
         </div>
 
         {/* GIF / Video Toggle */}
-        <div className="flex items-center gap-1 p-1 rounded-xl shrink-0 w-fit xl:border-l border-white/10 xl:pl-6 mt-5 xl:mt-0"
-          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", height: "fit-content", alignSelf: "center" }}
+        <div className="flex items-center gap-1 p-1 rounded-xl w-full xl:w-fit shrink-0 border-t xl:border-t-0 xl:border-l border-white/10 pt-4 sm:pt-5 xl:pt-0 xl:pl-6 mt-1 sm:mt-2 xl:mt-0"
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", alignSelf: "center" }}
         >
           {([
             { value: "gif", label: "GIFs", icon: FiImage },
@@ -177,7 +239,7 @@ export default function MyWorkoutPage() {
               <button
                 key={value}
                 onClick={() => setMediaType(value)}
-                className="cursor-pointer flex items-center gap-2 px-5 py-2.5 rounded-lg text-[14px] font-semibold transition-all duration-200"
+                className="cursor-pointer flex-1 xl:flex-none justify-center flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-[13px] sm:text-[14px] font-semibold transition-all duration-200"
                 style={active ? {
                   background: "linear-gradient(135deg, rgba(255,180,71,0.9), rgba(255,140,0,0.9))",
                   color: "#1c0a00",
@@ -245,8 +307,7 @@ export default function MyWorkoutPage() {
                 category={item.category}
                 thumbnailUrl={item.thumbnailUrl}
                 onPlay={() => {
-                  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-                  setPlayingVideoId({ id: item._id, title: item.title, streamUrl: `${API_BASE}/media/stream/${item._id}` });
+                  setPlayingVideoId({ id: item._id, title: item.title, streamUrl: item.streamUrl });
                 }}
                 savedDays={saved.days}
                 onHeartClick={() => setSavingMedia({ id: item._id, title: item.title, days: saved.days })}

@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { FiX, FiCheck } from "react-icons/fi";
+import { FiX, FiCheck, FiEdit2 } from "react-icons/fi";
+import Swal from "sweetalert2";
 
 export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
-const DAYS: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAYS: DayOfWeek[] = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 interface SaveExerciseModalProps {
   mediaId: string;
@@ -15,6 +16,54 @@ interface SaveExerciseModalProps {
 export default function SaveExerciseModal({ mediaId, title, initialDays, onClose, onSave }: SaveExerciseModalProps) {
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>(initialDays);
   const [loading, setLoading] = useState(false);
+  const [dayAliases, setDayAliases] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch(`/api/users/profile`);
+        if (res.ok) {
+          const json = await res.json();
+          setDayAliases(json.data?.dayAliases || {});
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const handleEditAlias = async (day: DayOfWeek, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const currentAlias = dayAliases[day] || "";
+    
+    const { value: newAlias } = await Swal.fire({
+      title: `Rename ${day}`,
+      input: "text",
+      inputLabel: "Custom Name (e.g., Chest + Back)",
+      inputValue: currentAlias,
+      showCancelButton: true,
+      inputPlaceholder: "Enter a custom name",
+      confirmButtonColor: "#f97316",
+      cancelButtonColor: "#3f3f46"
+    });
+
+    if (newAlias !== undefined) {
+      try {
+        const res = await fetch("/api/users/day-aliases", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ day, alias: newAlias.trim() })
+        });
+        if (res.ok) {
+          const json = await res.json();
+          setDayAliases(json.data || {});
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
 
   // Lock body scroll
   useEffect(() => {
@@ -78,7 +127,17 @@ export default function SaveExerciseModal({ mediaId, title, initialDays, onClose
                     : "bg-white/[0.03] border-white/[0.05] text-zinc-400 hover:bg-white/[0.06] hover:text-white"
                 }`}
               >
-                <span className="font-medium text-[15px]">{day}</span>
+                <div className="flex items-center gap-3">
+                  <span className="font-medium text-[15px]">
+                    {day} {dayAliases[day] ? `- ${dayAliases[day]}` : ""}
+                  </span>
+                  <div 
+                    className="p-1.5 rounded hover:bg-white/10 text-zinc-500 hover:text-orange-400 transition-colors"
+                    onClick={(e) => handleEditAlias(day, e)}
+                  >
+                    <FiEdit2 className="w-3.5 h-3.5" />
+                  </div>
+                </div>
                 <div className={`w-5 h-5 rounded flex items-center justify-center transition-all ${
                   isSelected ? "bg-orange-500" : "border border-white/20"
                 }`}>
