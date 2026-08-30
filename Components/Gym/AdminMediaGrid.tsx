@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { FiLoader, FiEdit2, FiX, FiPlay, FiArrowUp } from "react-icons/fi";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import VideoPlayerModal from "./VideoPlayerModal";
 
 interface MediaItem {
@@ -31,6 +32,7 @@ export default function AdminMediaGrid({ category, mediaType }: AdminMediaGridPr
   const [playingVideo, setPlayingVideo] = useState<MediaItem | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const { data: session } = useSession();
+  const router = useRouter();
 
   const fetchMedia = useCallback(async (pageNum: number, reset: boolean) => {
     if (reset) setLoading(true);
@@ -279,20 +281,13 @@ export default function AdminMediaGrid({ category, mediaType }: AdminMediaGridPr
             setPlayingVideo({ ...playingVideo, ...updates });
 
             try {
-              const res = await fetch(`/api/media/${playingVideo._id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(updates),
-              });
-              if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.error || res.statusText || 'Unknown error');
-              }
+              await handleUpdate(playingVideo._id, updates);
             } catch (err) {
               console.error(err);
-              alert("Failed to save changes.");
-              // Rollback if needed (can be complex, so keeping it simple)
             }
+          }}
+          onEditRequest={() => {
+            router.push(`/admin-dashboard/video-edit?id=${playingVideo._id}`);
           }}
         />
       )}
@@ -367,20 +362,35 @@ export default function AdminMediaGrid({ category, mediaType }: AdminMediaGridPr
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setEditingItem(null)}
-                  className="flex-1 py-3 px-4 rounded-xl text-sm font-semibold text-zinc-300 bg-white/5 hover:bg-white/10 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-3 px-4 rounded-xl text-sm font-semibold text-black bg-orange-400 hover:bg-orange-500 transition-colors text-center"
-                >
-                  Save Changes
-                </button>
+              <div className="pt-4 border-t border-white/10 mt-6 space-y-3">
+                {editingItem.type === "video" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      router.push(`/admin-dashboard/video-edit?id=${editingItem._id}`);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                    Advanced Video Editor (Trim, Crop, etc)
+                  </button>
+                )}
+                
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditingItem(null)}
+                    className="flex-1 py-3 px-4 rounded-xl text-sm font-semibold text-zinc-300 bg-white/5 hover:bg-white/10 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 px-4 rounded-xl text-sm font-semibold text-black bg-orange-400 hover:bg-orange-500 transition-colors text-center"
+                  >
+                    Save Changes
+                  </button>
+                </div>
               </div>
             </form>
           </div>

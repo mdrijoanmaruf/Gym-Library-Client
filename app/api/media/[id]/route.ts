@@ -49,3 +49,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   
   return NextResponse.json(data || {}, { status: res.status });
 }
+
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const upstream = `${API_BASE}/media/${id}`;
+
+  const res = await fetch(upstream);
+  const text = await res.text();
+  
+  let data;
+  try { data = JSON.parse(text); } catch { data = { text }; }
+  
+  return NextResponse.json(data || {}, { status: res.status });
+}
