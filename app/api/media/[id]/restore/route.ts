@@ -13,29 +13,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const { id } = await params;
-  const body = await req.json();
-
-  const upstream = `${API_BASE}/media/${id}/process`;
-  
-  console.log(`[PROCESS API] Sending to ${upstream}, token exists:`, !!token);
+  const upstream = `${API_BASE}/media/${id}/restore`;
 
   const res = await fetch(upstream, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`
-    },
-    body: JSON.stringify(body)
+    }
   });
 
   const text = await res.text();
-  console.log(`[PROCESS API] Upstream response status:`, res.status, text.substring(0, 100));
   
   let data;
   try { data = JSON.parse(text); } catch { data = { text }; }
   
   if (!res.ok) {
-    return NextResponse.json(data || { error: "Failed to process video" }, { status: res.status });
+    return NextResponse.json(data || { error: "Failed to restore video" }, { status: res.status });
   }
 
   return NextResponse.json(data);

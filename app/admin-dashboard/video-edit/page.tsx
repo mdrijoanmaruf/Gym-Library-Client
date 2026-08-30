@@ -40,6 +40,7 @@ function VideoEditorContent() {
   });
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
 
@@ -185,7 +186,7 @@ function VideoEditorContent() {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to process video");
+        throw new Error(errorData.message || errorData.error || "Failed to process video");
       }
 
       await Swal.fire({
@@ -203,6 +204,46 @@ function VideoEditorContent() {
     }
   };
 
+  const handleRestore = async () => {
+    const confirm = await Swal.fire({
+      title: 'Restore Original?',
+      text: 'This will delete the currently processed video and revert to the original unmodified video. Are you sure?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#3f3f46',
+      confirmButtonText: 'Yes, Restore'
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    setIsRestoring(true);
+    try {
+      const res = await fetch(`/api/media/${videoId}/restore`, {
+        method: "POST"
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || "Failed to restore video");
+      }
+
+      await Swal.fire({
+        title: "Restored!",
+        text: "The original video has been restored successfully.",
+        icon: "success",
+        confirmButtonColor: "#f97316"
+      });
+      // Refresh the page data
+      window.location.reload();
+    } catch (err: any) {
+      console.error(err);
+      Swal.fire("Restore Error", err.message, "error");
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[70vh]">
@@ -212,7 +253,7 @@ function VideoEditorContent() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-full mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -252,9 +293,24 @@ function VideoEditorContent() {
           
           <div className="w-px h-6 bg-white/10 mx-2"></div>
 
+          {videoData?.originalR2Key && (
+            <button
+              onClick={handleRestore}
+              disabled={isRestoring || isProcessing}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm bg-zinc-800/80 text-white hover:bg-zinc-700 transition-colors border border-white/10 disabled:opacity-50"
+            >
+              {isRestoring ? (
+                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              ) : (
+                <FiRotateCcw className="w-4 h-4 text-red-400" />
+              )}
+              {isRestoring ? "Restoring..." : "Restore Original"}
+            </button>
+          )}
+
           <button
             onClick={handleProcess}
-            disabled={isProcessing}
+            disabled={isProcessing || isRestoring}
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-orange-500 to-amber-500 text-black hover:opacity-90 transition-opacity shadow-[0_0_20px_rgba(255,140,0,0.2)] disabled:opacity-50"
           >
             {isProcessing ? (
