@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import {
   FiX, FiPlay, FiPause, FiVolume2, FiVolumeX,
-  FiMaximize, FiMinimize, FiRewind, FiFastForward,
+  FiMaximize, FiMinimize, FiRewind, FiFastForward, FiCheck
 } from "react-icons/fi";
 
 interface VideoPlayerModalProps {
@@ -11,6 +11,11 @@ interface VideoPlayerModalProps {
   title: string;
   streamUrl?: string;
   onClose: () => void;
+  isAdmin?: boolean;
+  featured?: boolean;
+  order?: number;
+  onUpdate?: (updates: { title?: string; featured?: boolean; order?: number }) => void;
+  onEditRequest?: () => void;
 }
 
 function formatTime(secs: number) {
@@ -19,7 +24,7 @@ function formatTime(secs: number) {
   return `${m}:${s}`;
 }
 
-export default function VideoPlayerModal({ id, title, streamUrl, onClose }: VideoPlayerModalProps) {
+export default function VideoPlayerModal({ id, title: initialTitle, streamUrl, onClose, isAdmin, featured, order, onUpdate, onEditRequest }: VideoPlayerModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const seekBarRef = useRef<HTMLInputElement>(null);
@@ -34,6 +39,18 @@ export default function VideoPlayerModal({ id, title, streamUrl, onClose }: Vide
   const [showControls, setShowControls] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  
+  // Admin inline editing state
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitleValue, setEditTitleValue] = useState(initialTitle);
+  const [editOrderValue, setEditOrderValue] = useState(order === 999999 ? "" : (order || ""));
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setEditTitleValue(initialTitle);
+    setEditOrderValue(order === 999999 ? "" : (order || ""));
+  }, [initialTitle, order]);
+
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const resetControlsTimer = useCallback(() => {
@@ -155,14 +172,112 @@ export default function VideoPlayerModal({ id, title, streamUrl, onClose }: Vide
         onMouseMove={resetControlsTimer}
       >
         {/* Title bar */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06]">
-          <p className="text-[14px] font-semibold text-zinc-300 truncate max-w-[80%]">{title}</p>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.06] transition-all"
-          >
-            <FiX className="w-5 h-5" />
-          </button>
+        <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06] relative z-40">
+          <div className="flex items-center gap-2 flex-1 min-w-0 pr-4">
+            {isEditingTitle ? (
+              <div className="flex items-center gap-2 w-full">
+                <input
+                  ref={titleInputRef}
+                  value={editTitleValue}
+                  placeholder="Title"
+                  onChange={(e) => setEditTitleValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setEditTitleValue(initialTitle);
+                      setEditOrderValue(order === 999999 ? "" : (order || ""));
+                      setIsEditingTitle(false);
+                    }
+                  }}
+                  className="bg-black/50 border border-orange-500/50 rounded px-2 py-1 text-[14px] font-semibold text-white flex-1 focus:outline-none focus:border-orange-500 transition-colors min-w-[100px]"
+                  autoFocus
+                />
+                <input
+                  type="number"
+                  value={editOrderValue}
+                  placeholder="Order (Auto)"
+                  onChange={(e) => setEditOrderValue(e.target.value)}
+                  className="bg-black/50 border border-orange-500/50 rounded px-2 py-1 text-[14px] font-semibold text-white w-24 focus:outline-none focus:border-orange-500 transition-colors"
+                />
+                <button
+                  onClick={() => {
+                    setIsEditingTitle(false);
+                    if (onUpdate) {
+                      const newTitle = editTitleValue.trim();
+                      const newOrder = editOrderValue === "" ? 999999 : Number(editOrderValue);
+                      const updates: any = {};
+                      if (newTitle !== initialTitle && newTitle !== "") updates.title = newTitle;
+                      if (newOrder !== order) updates.order = newOrder;
+                      if (Object.keys(updates).length > 0) onUpdate(updates);
+                    }
+                  }}
+                  className="shrink-0 p-1.5 rounded-md bg-orange-500 text-black hover:bg-orange-400 transition-colors"
+                  title="Save"
+                >
+                  <FiCheck className="w-4 h-4 stroke-[3]" />
+                </button>
+                <button
+                  onClick={() => {
+                    setEditTitleValue(initialTitle);
+                    setEditOrderValue(order === 999999 ? "" : (order || ""));
+                    setIsEditingTitle(false);
+                  }}
+                  className="shrink-0 p-1.5 rounded-md bg-white/10 text-white hover:bg-white/20 transition-colors"
+                  title="Cancel"
+                >
+                  <FiX className="w-4 h-4 stroke-[3]" />
+                </button>
+              </div>
+            ) : (
+              <p className="text-[14px] font-semibold text-zinc-300 truncate" title={initialTitle}>
+                {initialTitle}
+              </p>
+            )}
+            
+            {isAdmin && !isEditingTitle && (
+              <button
+                onClick={() => setIsEditingTitle(true)}
+                className="shrink-0 text-zinc-500 hover:text-orange-400 transition-colors p-1"
+                title="Edit Details"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+              </button>
+            )}
+          </div>
+
+          {!isEditingTitle && (
+            <div className="flex items-center gap-3 shrink-0">
+              {isAdmin && (
+                <>
+                  <div className="flex items-center gap-1.5 text-zinc-400 bg-white/5 px-2.5 py-1 rounded-lg text-xs font-medium border border-white/5" title="Sort Order">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" /></svg>
+                    {order === 999999 ? "Auto" : order}
+                  </div>
+                  
+                  <button
+                    onClick={() => onUpdate && onUpdate({ featured: !featured })}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all border ${
+                      featured
+                        ? "text-orange-400 bg-orange-500/10 border-orange-500/30"
+                        : "text-zinc-500 bg-white/5 hover:text-zinc-300 hover:bg-white/10 border-white/5"
+                    }`}
+                    title={featured ? "Unfeature" : "Feature"}
+                  >
+                    <svg className="w-3.5 h-3.5" fill={featured ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+                    {featured ? "Featured" : "Feature"}
+                  </button>
+                </>
+              )}
+
+              <div className="w-px h-4 bg-white/10 mx-1"></div>
+
+              <button
+                onClick={onClose}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.06] transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Video */}
